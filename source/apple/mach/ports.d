@@ -4,7 +4,7 @@ public import core.sys.darwin.mach.port;
 public import core.sys.darwin.mach.kern_return;
 public import core.sys.darwin.mach.semaphore;
 
-static if(NuvkIsAppleOS):
+version(AppleOS):
 extern(C):
 
 /// IPC Space

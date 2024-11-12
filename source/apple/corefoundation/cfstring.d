@@ -13,6 +13,7 @@ import apple.corefoundation.cfbase;
 import apple.corefoundation.cfallocator;
 import apple.corefoundation;
 import apple;
+import apple.os;
 
 mixin RequireAPIs!(CoreFoundation);
 extern(C) @nogc nothrow:

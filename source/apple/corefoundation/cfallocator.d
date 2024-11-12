@@ -7,6 +7,7 @@
 
 module apple.corefoundation.cfallocator;
 import apple.corefoundation.cfbase;
+import apple.os;
 import apple;
 
 mixin RequireAPIs!(CoreFoundation);
@@ -45,7 +46,7 @@ alias CFAllocatorPreferredSizeCallBack = CFIndex function(CFIndex size, CFOption
 /**
     A prototype for a function callback that reallocates memory of a requested size for an existing block of memory.
 */
-alias CFAllocatorReallocateCallBack = const(void)* function(void* ptr, CFIndex newsize, CFOptionFlags hint, voi)* info);
+alias CFAllocatorReallocateCallBack = const(void)* function(void* ptr, CFIndex newsize, CFOptionFlags hint, void* info);
 
 /**
     A prototype for a function callback that releases the given data.
@@ -147,7 +148,7 @@ mixin RequireAPIs!(CoreFoundation);
 /**
     Returns the type identifier for the CFAllocator opaque type.
 */
-extern CFTypeID CFAllocatorGetTypeID(void);
+extern CFTypeID CFAllocatorGetTypeID();
 
 /**
 	CFAllocatorSetDefault() sets the allocator that is used in the current
@@ -177,7 +178,7 @@ extern void CFAllocatorSetDefault(CFAllocatorRef allocator);
 /**
     Gets the default allocator
 */
-extern CFAllocatorRef CFAllocatorGetDefault(void);
+extern CFAllocatorRef CFAllocatorGetDefault();
 
 /**
     Creates an allocator object.

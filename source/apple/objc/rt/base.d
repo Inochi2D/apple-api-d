@@ -65,7 +65,7 @@ struct objc_property_attribute_t {
 /**
     Type to specify the behavior of an association.
 */
-enum objc_AssociationPolicy : uintptr_t {
+enum objc_AssociationPolicy : size_t {
     OBJC_ASSOCIATION_ASSIGN             = 0,
     OBJC_ASSOCIATION_COPY               = 1403,
     OBJC_ASSOCIATION_COPY_NONATOMIC     = 3,
@@ -456,7 +456,7 @@ extern void objc_removeAssociatedObjects(id object);
 */
 extern void objc_msgSend(id instance, SEL, ...);
 
-version(OBJC_ABI_1) {
+static if (OBJC_ABI == 1) {
     
     /**
         Sends a message with a struct return value to an instance of a class.
@@ -474,7 +474,7 @@ version(OBJC_ABI_1) {
 */
 extern void objc_msgSendSuper(objc_super* super_, SEL, ...);
 
-version(OBJC_ABI_1) {
+static if (OBJC_ABI == 1) {
 
     /**
         Sends a message with a data-structure return value to the superclass of an instance of a class.

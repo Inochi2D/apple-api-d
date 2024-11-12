@@ -9,9 +9,10 @@
     CFDictionary
 */
 module apple.corefoundation.cfdictionary;
+import apple.corefoundation.cfallocator;
 import apple.corefoundation.cfbase;
-import apple.corefoundation : CoreFoundation;
 import apple;
+import apple.os;
 
 mixin RequireAPIs!(CoreFoundation);
 extern(C) @nogc nothrow:
@@ -524,7 +525,7 @@ extern void CFDictionaryGetKeysAndValues(CFDictionaryRef theDict, const(void)** 
 		what is expected by the applier function, the behavior is
 		undefined.
 */
-extern void CFDictionaryApplyFunction(CFDictionaryRef theDict, CFDictionaryApplierFunction CF_NOESCAPE applier, void* context);
+extern void CFDictionaryApplyFunction(CFDictionaryRef theDict, CFDictionaryApplierFunction applier, void* context);
 
 /**
 	Adds the key-value pair to the dictionary if no such key already exists.

@@ -11,3 +11,4 @@
 module apple.objc;
 
 public import apple.objc.block;
+public import apple.objc.nsobject;

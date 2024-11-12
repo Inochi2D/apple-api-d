@@ -9,8 +9,10 @@
     CFArray
 */
 module apple.corefoundation.cfarray;
+import apple.corefoundation.cfallocator;
 import apple.corefoundation.cfbase;
 import apple;
+import apple.os;
 
 mixin RequireAPIs!(CoreFoundation);
 extern(C) @nogc nothrow:
@@ -325,7 +327,7 @@ extern void CFArrayGetValues(CFArrayRef theArray, CFRange range, const(void)** v
 		what is expected by the applier function, the behavior is
 		undefined.
 */
-extern void CFArrayApplyFunction(CFArrayRef theArray, CFRange range, CFArrayApplierFunction CF_NOESCAPE applier, void* context);
+//extern void CFArrayApplyFunction(CFArrayRef theArray, CFRange range, CFArrayApplierFunction applier, void* context);
 
 /**
 	Searches the array for the value.

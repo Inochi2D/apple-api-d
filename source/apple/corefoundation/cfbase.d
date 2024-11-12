@@ -9,6 +9,7 @@
     Core Foundation Base APIs
 */
 module apple.corefoundation.cfbase;
+import apple.corefoundation.cfallocator;
 import apple.os;
 
 /// Enum used as a version tag.
@@ -29,7 +30,7 @@ struct __CFString;
 /**
     The current version of the Core Foundation framework
 */
-extern(C) extern __gshared double CFStringRef kCFCoreFoundationVersionNumber;
+extern(C) extern __gshared double kCFCoreFoundationVersionNumber;
 
 enum kCFCoreFoundationVersionNumber10_0     = 196.4;
 enum kCFCoreFoundationVersionNumber10_0_3   = 196.5;
@@ -138,7 +139,7 @@ extern(C) extern const __gshared CFNullRef kCFNull;
 /**
     Gets the Type ID of the CoreFundation Null type.
 */
-extern CFTypeID CFNullGetTypeID(void);
+extern CFTypeID CFNullGetTypeID();
 
 /**
     Releases a Core Foundation object.

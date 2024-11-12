@@ -17,5 +17,9 @@ else version(ARM)       version = OBJC_ABI_2;
 else version(AArch64)   version = OBJC_ABI_2;
 else                    version = OBJC_ABI_NONE;
 
-enum objc_classVarName(string ClassName) = "_OBJC_CLASS_$_"~ClassName;
-enum objc_protoVarName(string ProtoName) = "_OBJC_PROTOCOL_$_"~ProtoName;
+version(OBJC_ABI_1) enum OBJC_ABI = 1;
+else version(OBJC_ABI_2) enum OBJC_ABI = 2;
+else enum OBJC_ABI = -1;
+
+enum objc_classVarName(string ClassName) = "OBJC_CLASS_$_"~ClassName;
+enum objc_protoVarName(string ProtoName) = "OBJC_PROTOCOL_$_"~ProtoName;

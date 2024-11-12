@@ -16,3 +16,4 @@ apple_api_d-test-*
 *.lst
 
 dub.selections.json
+out/

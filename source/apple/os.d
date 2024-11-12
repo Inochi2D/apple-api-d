@@ -61,7 +61,7 @@ alias UTF8Char          = char;
     Mixin template which instructs LDC and other compatible D compilers
     to link against the specified frameworks.
 */
-mixin template LinkFramework(string... frameworks) {
+mixin template LinkFramework(frameworks...) {
     
     import apple.os;
     version(AppleOS) {
