@@ -140,13 +140,13 @@ enum isObjectiveCProtocol(T) = is(T == interface) && hasUDA(T, ObjectiveC);
 
     Needs to be mixed-in from within the class or protocol you wish to bind.
 */
-mixin template ObjcLink {
-
+mixin template ObjcLink(string name=null) {
     import std.traits;
     import apple.objc.base;
     import apple.objc.bind;
 
     alias Self = typeof(this);
+    enum SelfLinkName = name is null ? Self.stringof : name;
 
     static if (isObjectiveCClass!Self) {
         
@@ -154,11 +154,11 @@ mixin template ObjcLink {
         static assert(is(DObject == NSObject) || is(DObject : NSObject), "Objective-C type did not derive from NSObject!");
 
         // Create C const object.
-        pragma(mangle, objc_classVarName!(Self.stringof))
-        extern(C) extern const __gshared objc_class mixin("Objc_Class_", Self.stringof);
+        pragma(mangle, objc_classVarName!(SelfLinkName))
+        extern(C) extern const __gshared objc_class mixin("Objc_Class_", SelfLinkName);
 
         // Create reference to said object
-        static const Class selfRef = &mixin("Objc_Class_", Self.stringof);
+        static const Class selfRef = &mixin("Objc_Class_", SelfLinkName);
 
         /// Reference to "self"
 
@@ -166,14 +166,14 @@ mixin template ObjcLink {
     } else static if (isObjectiveCProtocol!Self) {
 
         /// Declare protocol type
-        extern(C) extern const pragma(mangle, objc_protoVarName!(Self.stringof)) __gshared Protocol selfRef;
+        extern(C) extern const pragma(mangle, objc_protoVarName!(SelfLinkName)) __gshared Protocol selfRef;
 
         // Create C const object.
         pragma(mangle, objc_protoVarName!(Self.stringof))
-        extern(C) extern const __gshared objc_protocol mixin("Objc_Proto_", Self.stringof);
+        extern(C) extern const __gshared objc_protocol mixin("Objc_Proto_", SelfLinkName);
 
         // Create reference to said object
-        static const Protocol selfRef = &mixin("Objc_Proto_", Self.stringof);
+        static const Protocol selfRef = &mixin("Objc_Proto_", SelfLinkName);
 
         mixin ObjcLinkProtocol!Self;
     } else static assert(0, "Type can not be bound!");
