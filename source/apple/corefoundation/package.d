@@ -14,3 +14,5 @@ import apple.os;
 public import apple.corefoundation.cfbase;
 public import apple.corefoundation.cfdictionary;
 public import apple.corefoundation.cfstring;
+public import apple.corefoundation.cfarray;
+public import apple.corefoundation.cfallocator;

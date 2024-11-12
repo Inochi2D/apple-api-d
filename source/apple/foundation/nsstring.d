@@ -1,7 +1,22 @@
+/*
+    Copyright © 2024, Inochi2D Project
+    Distributed under the 2-Clause BSD License, see LICENSE file.
+    
+    Authors: Luna Nielsen
+*/
+
+/**
+    Bindings to Apple's Foundation API.
+*/
 module apple.foundation.nsstring;
+import apple.corefoundation;
+import apple.foundation;
 import apple.objc.nsobject;
 import apple.objc.rt;
 import apple.objc.rt : selector;
+import apple.os;
+
+mixin RequireAPIs!(Foundation);
 
 /**
     NSString
@@ -27,6 +42,14 @@ public:
     @property NSUInteger length() const;
 
     /**
+        Create from CoreFoundation string.
+    */
+    version(CoreFoundation) 
+    this(CFStringRef str) {
+        super(cast(id)str);
+    }
+
+    /**
         Construct with UTF8 string.
     */
     this(const(char)* str) {
@@ -39,6 +62,14 @@ public:
     */
     override
     string toString() => cast(string)this.UTF8String()[0..this.length()];
+
+    /**
+        Casts NSString to CoreFoundation String
+    */
+    version(CoreFoundation) 
+    CFStringRef opCast(T)() if(is(T == CFStringRef)) {
+        return cast(CFStringRef)this.self();
+    }
 
     // Link NSString.
     mixin ObjcLink;

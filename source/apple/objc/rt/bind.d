@@ -19,6 +19,10 @@ import apple.objc.rt.abi;
 import std.traits;
 import std.meta;
 
+//
+//      UDAs
+//
+
 /**
     Opaque handle for ObjectiveC linkage type.
 */
@@ -41,13 +45,6 @@ struct nobind;
 struct instancetype;
 
 /**
-    Converts the specified function signature to a Objective-C function signature.
-*/
-template toObjectiveCSig(alias fn, ClassT) {
-    alias toObjectiveCSig = extern(C) ReturnType!fn function(id, SEL, Parameters!fn) @nogc nothrow;
-}
-
-/**
     Gets whether the specified member is an alias.
 */
 template isAlias(T, string member) {
@@ -56,22 +53,58 @@ template isAlias(T, string member) {
         !(__traits(isSame, T, __traits(parent, __traits(getMember, T, member))));
 }
 
+//
+//      Argument Handling
+//
+template toObjCArg(alias arg) {
+    import apple.objc.nsobject;
+
+    static if (is(typeof(arg) : NSObject))
+        alias toObjCArg = arg.self();
+    else
+        alias toObjCArg = arg;
+}
+
+template toObjCArgs(Args...) {
+    alias toObjCArgs = staticMap!(toObjCArg, AliasSeq!Args);
+}
+
+template toObjCArgType(alias arg) {
+    import apple.objc.nsobject;
+
+    static if (is(typeof(arg) : NSObject))
+        alias toObjCArgType = id;
+    else
+        alias toObjCArgType = arg;
+}
+
+template toObjCArgTypes(Args...) {
+    alias toObjCArgTypes = staticMap!(toObjCArgType, AliasSeq!Args);
+}
+
+
+//
+//      Messages
+//
+
 /**
     Sends a message to an id instance
 */
-T sendMessage(T = void, alias fn, Args...)(id instance, SEL selector, Args args) {
+T sendMessage(T = void, Args...)(id instance, SEL selector, Args args) {
+    alias fn = T function(id, SEL, toObjCArgTypes!(Args)) @nogc nothrow;
+
     static if (OBJC_ABI == 1) {
         static if(is(T == struct)) {
             T toReturn = T.init;
-            objc_msgSend_stret(&sReturn, instance, selector, args);
+            objc_msgSend_stret(&sReturn, instance, selector, toObjCArgs!args);
             return toReturn;
         } else static if (isFloating!T) {
-            return (cast(toObjectiveCSig!(fn, T))&objc_msgSend_fpret)(instance, selector, args);
+            return (cast(fn)&objc_msgSend_fpret)(instance, selector, toObjCArgs!args);
         } else {
-            return (cast(toObjectiveCSig!(fn, T))&objc_msgSend)(instance, selector, args);
+            return (cast(fn)&objc_msgSend)(instance, selector, toObjCArgs!args);
         }
     } else static if (OBJC_ABI == 2) {
-        return (cast(toObjectiveCSig!(fn, T))&objc_msgSend)(instance, selector, args);
+        return (cast(fn)&objc_msgSend)(instance, selector, toObjCArgs!args);
     } else static assert(0, "ABI is not supported!");
 }
 
@@ -79,6 +112,8 @@ T sendMessage(T = void, alias fn, Args...)(id instance, SEL selector, Args args)
     Sends a message to an object's super class
 */
 T sendMessageSuper(T = void)(Class superclass, id instance, SEL selector, ...) {
+    alias fn = T function(id, SEL, toObjCArgTypes!Args) @nogc nothrow;
+
     objc_super spInstance = objc_super(
         reciever: instance,
         superClass: superclass
@@ -88,14 +123,18 @@ T sendMessageSuper(T = void)(Class superclass, id instance, SEL selector, ...) {
 
     static if (OBJC_ABI == 1) {
         static if(is(T == struct)) {
-            return (cast(toObjectiveCSig!(objc_msgSendSuper_stret, T))&objc_msgSendSuper_stret)(instance, selector, args);
+            return (cast(fn)&objc_msgSendSuper_stret)(instance, selector, args);
         } else {
-            return (cast(toObjectiveCSig!(objc_msgSendSuper, T))&objc_msgSendSuper)(instance, selector, args);
+            return (cast(fn)&objc_msgSendSuper)(instance, selector, args);
         }
     } else static if (OBJC_ABI == 2) {
-        return (cast(toObjectiveCSig!(objc_msgSendSuper, T))&objc_msgSendSuper)(instance, selector, args);
+        return (cast(fn)&objc_msgSendSuper)(instance, selector, args);
     } else static assert(0, "ABI is not supported!");
 }
+
+//
+//      Binding Logic
+//
 
 /**
     Gets whether class type of `instance` inherits from the `toCheck` class.
@@ -149,6 +188,7 @@ mixin template ObjcLink(string name=null) {
     import apple.objc.rt.base;
     import apple.objc.rt.bind;
     import apple.objc.rt.abi;
+    import apple.objc.nsobject;
 
     alias Self = typeof(this);
     enum SelfLinkName = name is null ? Self.stringof : name;
@@ -246,9 +286,9 @@ template ObjcLinkMember(alias DObjectMember, ParentObject, bool isSuperCall=fals
         override
         mixin(fQualifiers, fReturnType, fName, fParamList, q{{
             static if (isSuperCall) 
-                return sendMessageSuper!(ReturnType!DObjectMember, DObjectMember)(this.self, sel_registerName(fSelector), __traits(parameters));
+                return sendMessageSuper!(ReturnType!DObjectMember)(this.self, sel_registerName(fSelector), __traits(parameters));
             else 
-                return sendMessage!(ReturnType!DObjectMember, DObjectMember)(this.self, sel_registerName(fSelector), __traits(parameters));
+                return sendMessage!(ReturnType!DObjectMember)(this.self, sel_registerName(fSelector), __traits(parameters));
         }});
     } else static if (hasFunctionAttributes!(DObjectMember, "@property")) {
         enum fQualifiers = "@nogc nothrow @property ";
@@ -261,9 +301,9 @@ template ObjcLinkMember(alias DObjectMember, ParentObject, bool isSuperCall=fals
                 const(char)* _fSelector = fSelector;
 
             static if (isSuperCall) 
-                return sendMessageSuper!(ReturnType!DObjectMember, DObjectMember)(this.self, sel_registerName(_fSelector), __traits(parameters));
+                return sendMessageSuper!(ReturnType!DObjectMember)(this.self, sel_registerName(_fSelector), __traits(parameters));
             else 
-                return sendMessage!(ReturnType!DObjectMember, DObjectMember)(this.self, sel_registerName(_fSelector), __traits(parameters));
+                return sendMessage!(ReturnType!DObjectMember)(this.self, sel_registerName(_fSelector), __traits(parameters));
         }});
 
     } else static if (hasUDA!(DObjectMember, selector)) {
@@ -273,9 +313,9 @@ template ObjcLinkMember(alias DObjectMember, ParentObject, bool isSuperCall=fals
             pragma(mangle, DObjectMember.mangleof)
             mixin(fQualifiers, fReturnType, fName, fParamList, q{{
                 static if (isSuperCall) 
-                    return sendMessageSuper!(ReturnType!DObjectMember, DObjectMember)(cast(id)SELF_TYPE, sel_registerName(fSelector), __traits(parameters));
+                    return sendMessageSuper!(ReturnType!DObjectMember)(cast(id)SELF_TYPE, sel_registerName(fSelector), __traits(parameters));
                 else 
-                    return sendMessage!(ReturnType!DObjectMember, DObjectMember)(cast(id)SELF_TYPE, sel_registerName(fSelector), __traits(parameters));
+                    return sendMessage!(ReturnType!DObjectMember)(cast(id)SELF_TYPE, sel_registerName(fSelector), __traits(parameters));
             }});
         } else {
             enum fQualifiers = "@nogc nothrow ";
@@ -283,9 +323,9 @@ template ObjcLinkMember(alias DObjectMember, ParentObject, bool isSuperCall=fals
             pragma(mangle, DObjectMember.mangleof)
             mixin(fQualifiers, fReturnType, fName, fParamList, q{{
                 static if (isSuperCall) 
-                    return sendMessageSuper!(ReturnType!DObjectMember, DObjectMember)(this.self, sel_registerName(fSelector), __traits(parameters));
+                    return sendMessageSuper!(ReturnType!DObjectMember)(this.self, sel_registerName(fSelector), __traits(parameters));
                 else 
-                    return sendMessage!(ReturnType!DObjectMember, DObjectMember)(this.self, sel_registerName(fSelector), __traits(parameters));
+                    return sendMessage!(ReturnType!DObjectMember)(this.self, sel_registerName(fSelector), __traits(parameters));
             }});
         }
     }

@@ -18,9 +18,6 @@ import apple.os;
 mixin RequireAPIs!(CoreFoundation);
 extern(C) @nogc nothrow:
 
-/// Only available on apple OSes.
-version(AppleOS):
-
 /**
     An integer type for constants used to specify supported string encodings in various CFString functions.
 */
@@ -77,4 +74,4 @@ CFStringRef CFStringCreateWithCStringNoCopy(CFAllocatorRef, const(char)*, CFStri
     Creates a CFString object from an external C string buffer that might 
     serve as the backing store for the object. 
 */
-CFStringRef CFStringCreateWithFormatAndArguments(CFAllocatorRef, CFDictionaryRef, CFString, ...);
+CFStringRef CFStringCreateWithFormatAndArguments(CFAllocatorRef, CFDictionaryRef, CFStringRef, ...);

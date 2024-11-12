@@ -20,6 +20,7 @@ enum CoreFoundation;
 // the correct library.
 mixin RequireAPIs!(CoreFoundation);
 mixin LinkFramework!("CoreFoundation");
+
 extern(C) @nogc nothrow:
 
 /**

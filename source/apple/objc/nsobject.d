@@ -68,14 +68,14 @@ protected:
         Sends a message (calls a function) based on the given selector.
     */
     T message(T, Args...)(const(char)* selector, Args args) {
-        return sendMessage!(T, T function(Args...), Args)(this.self(), sel_registerName(selector), args);
+        return sendMessage!(T, Args)(this.self(), sel_registerName(selector), args);
     }
 
     /**
         Sends a message to super class (calls a function) based on the given selector.
     */
     T messageSuper(T, Args...)(const(char)* selector, Args args) {
-        return sendMessageSuper!(T, T function(Args...), Args)(this.superclass(), sel_registerName(selector), args);
+        return sendMessageSuper!(T, Args)(this.superclass(), sel_registerName(selector), args);
     }
 
     /**
@@ -83,7 +83,7 @@ protected:
         A class instance will need to be specified.
     */
     static T message(T, Args...)(Class target, const(char)* selector, Args args) {
-        return sendMessage!(T, T function(Args...), Args)(cast(id)target, sel_registerName(selector), args);
+        return sendMessage!(T, Args)(cast(id)target, sel_registerName(selector), args);
     }
 
     /**
