@@ -1,0 +1,5 @@
+name "apple_api_d"
+description "Bindings for Apple's C APIs"
+authors "Luna Nielsen"
+copyright "Copyright © 2024, Inochi2D Project"
+license "BSD 2-clause"
