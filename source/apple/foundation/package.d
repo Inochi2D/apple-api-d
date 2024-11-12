@@ -10,11 +10,13 @@
 */
 module apple.foundation;
 import apple.corefoundation;
+import apple.objc;
+import apple.os;
 
 /// Enum used as a version tag.
 enum Foundation;
 
-mixin RequireAPIs!(Foundation, CoreFoundation);
+mixin RequireAPIs!(Foundation, ObjC, CoreFoundation);
 
 /// Link to Foundation (on apple platforms)
 mixin LinkFramework!("Foundation");

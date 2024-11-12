@@ -8,14 +8,16 @@
 /**
     Bindings to Apple's CoreGraphics API.
 */
-module apple.coredata;
+module apple.coregraphics;
 import apple.foundation;
 import apple.coredata;
+import apple.objc;
+import apple.os;
 
 /// Enum used as a version tag.
 enum CoreGraphics;
 
-mixin RequireAPIs!(CoreGraphics, CoreData, Foundation);
+mixin RequireAPIs!(CoreGraphics, ObjC, CoreData, Foundation);
 
 /// Link to CoreData (on apple platforms)
 mixin LinkFramework!("CoreGraphics");

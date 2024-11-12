@@ -9,6 +9,11 @@
     Helpers to handle binding D type delcarations to Objective-C's Runtime.
 */
 module apple.objc.rt.bind;
+import apple.os;
+
+import apple.objc : ObjC;
+mixin RequireAPIs!(ObjC);
+
 import apple.objc.rt.base;
 import apple.objc.rt.abi;
 import std.traits;

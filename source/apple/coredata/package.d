@@ -10,11 +10,13 @@
 */
 module apple.coredata;
 import apple.foundation;
+import apple.objc;
+import apple.os;
 
 /// Enum used as a version tag.
 enum CoreData;
 
-mixin RequireAPIs!(CoreData, Foundation);
+mixin RequireAPIs!(CoreData, ObjC, Foundation);
 
 /// Link to CoreData (on apple platforms)
 mixin LinkFramework!("CoreData");

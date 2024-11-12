@@ -10,6 +10,10 @@
 */
 module apple.objc.rt.base;
 import apple.objc.rt.abi;
+import apple.os;
+
+import apple.objc : ObjC;
+mixin RequireAPIs!(ObjC);
 
 //
 //      Core types
@@ -132,6 +136,8 @@ alias IMP = extern(C) id function(id, SEL, ...) @nogc nothrow;
 */
 alias Protocol = objc_protocol*;
 
+
+static if (OBJC_ABI >= 0):
 extern(C) @nogc nothrow:
 
 
@@ -500,7 +506,7 @@ extern SEL sel_registerName(const(char)*);
 /**
     Registers a method name with the Objective-C runtime system.
 */
-extern void sel_getUid(const(char)*);
+extern SEL sel_getUid(const(char)*);
 
 /**
     Returns a Boolean value that indicates whether two selectors are equal.

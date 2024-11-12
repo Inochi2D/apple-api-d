@@ -1,4 +1,19 @@
+/*
+    Copyright © 2024, Inochi2D Project
+    Distributed under the 2-Clause BSD License, see LICENSE file.
+    
+    Authors: Luna Nielsen
+*/
+
+/**
+    Bindings to NSObject and NSObjectProtocol
+*/
 module apple.objc.nsobject;
+import apple.os;
+
+import apple.objc : ObjC;
+mixin RequireAPIs!(ObjC);
+
 import apple.objc.rt;
 import apple.objc.rt : selector;
 
