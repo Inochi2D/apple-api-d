@@ -6,10 +6,11 @@
 */
 
 /**
-    Interface to the Objective-C Runtime.
+    Helpers to handle binding D type delcarations to Objective-C's Runtime.
 */
 module apple.objc.rt.bind;
 import apple.objc.rt.base;
+import apple.objc.rt.abi;
 
 /**
     Opaque handle for ObjectiveC linkage type.
@@ -117,17 +118,11 @@ bool inherits(Class self, Class toCheck) {
     return false;
 }
 
-enum objcSelectorPrefix = "_OBJC_SEL";
-
 /**
-    Converts a selector string into an identifier.
+    Returns a setter selector from a name
 */
-string selectorToIdentifier(string sel) {
-    foreach(i; 0..sel) {
-        if (sel[i] == ":")
-            sel[i] = "_";
-    }
-    return objcSelectorPrefix~sel;
+string toObjcSetterSEL(string name) {
+    return "set"~name[0].toUpper()~name[1..$]~":";
 }
 
 /**
@@ -160,10 +155,10 @@ mixin template ObjcLink {
 
         // Create C const object.
         pragma(mangle, objc_classVarName!(Self.stringof))
-        extern(C) extern const __gshared objc_class mixin("Objc_", Self.stringof);
+        extern(C) extern const __gshared objc_class mixin("Objc_Class_", Self.stringof);
 
         // Create reference to said object
-        static const Class selfRef = &mixin("Objc_", Self.stringof);
+        static const Class selfRef = &mixin("Objc_Class_", Self.stringof);
 
         /// Reference to "self"
 
@@ -175,10 +170,10 @@ mixin template ObjcLink {
 
         // Create C const object.
         pragma(mangle, objc_protoVarName!(Self.stringof))
-        extern(C) extern const __gshared objc_protocol mixin("Objc_", Self.stringof);
+        extern(C) extern const __gshared objc_protocol mixin("Objc_Proto_", Self.stringof);
 
         // Create reference to said object
-        static const Protocol selfRef = &mixin("Objc_", Self.stringof);
+        static const Protocol selfRef = &mixin("Objc_Proto_", Self.stringof);
 
         mixin ObjcLinkProtocol!Self;
     } else static assert(0, "Type can not be bound!");
@@ -191,7 +186,7 @@ mixin template ObjcLinkClass(DClassObject) {
     static foreach(classMember; __traits(allMembers, DClassObject)) {
         static if (!isAlias!(DClassObject, classMember)) {
             static foreach(mRef; __traits(getOverloads, Class, classMember)) {
-                static if (!hasUDA!(mRef, nobind) && hasUDA!(mRef, selector)) {
+                static if (!hasUDA!(mRef, nobind) && (hasUDA!(mRef, selector) || hasFunctionAttributes!(mRef, "@property"))) {
                     mixin ObjcLinkMember!(mRef, DClassObject);
                 }
             }
@@ -200,19 +195,37 @@ mixin template ObjcLinkClass(DClassObject) {
 }
 
 mixin template ObjcLinkMember(DObjectMember, ParentObject, bool isSuperCall=false) {
-    static if (__traits(isStaticFunction, DObjectMember)) {
-        ReturnType!DObjectMember DObjectMember(Parameters!DObjectMember) {
-            static if (isSuperCall) 
-                return sendMessageSuper!(ReturnType!DObjectMember)(selfRef, sel_registerName(mixin(getUDAs!(DObjectMember, selector)[0].sel)), __traits(parameters));
-            else 
-                return sendMessage!(ReturnType!DObjectMember)(selfRef, sel_registerName(mixin(getUDAs!(DObjectMember, selector)[0].sel)), __traits(parameters));
+    static if (hasUDA!(DObjectMember, selector)) {
+        static if (__traits(isStaticFunction, DObjectMember)) {
+            ReturnType!DObjectMember DObjectMember(Parameters!DObjectMember) {
+                const(char)* _fSelector = getUDAs!(DObjectMember, selector)[0].sel;
+
+                static if (isSuperCall) 
+                    return sendMessageSuper!(ReturnType!DObjectMember)(selfRef, sel_registerName(_fSelector), __traits(parameters));
+                else 
+                    return sendMessage!(ReturnType!DObjectMember)(selfRef, sel_registerName(_fSelector), __traits(parameters));
+            }
+        } else {
+            ReturnType!DObjectMember DObjectMember(Parameters!DObjectMember) {
+                const(char)* _fSelector = getUDAs!(DObjectMember, selector)[0].sel;
+
+                static if (isSuperCall) 
+                    return sendMessageSuper!(ReturnType!DObjectMember)(selfRef, sel_registerName(_fSelector), __traits(parameters));
+                else 
+                    return sendMessage!(ReturnType!DObjectMember)(selfRef, sel_registerName(_fSelector), __traits(parameters));
+            }
         }
-    } else {
-        ReturnType!DObjectMember DObjectMember(Parameters!DObjectMember) {
-            static if (isSuperCall) 
-                return sendMessageSuper!(ReturnType!DObjectMember)(selfRef, sel_registerName(mixin(getUDAs!(DObjectMember, selector)[0].sel)), __traits(parameters));
+    } else static if (hasFunctionAttributes!(DObjectMember, "@property")) {
+        @property ReturnType!DObjectMember DObjectMember(Parameters!DObjectMember) {
+            static if (Parameters!DObjectMember.length > 0)
+                const(char)* _fSelector = static toObjcSetterSEL(__traits(identifier, DObjectMember));
             else 
-                return sendMessage!(ReturnType!DObjectMember)(selfRef, sel_registerName(mixin(getUDAs!(DObjectMember, selector)[0].sel)), __traits(parameters));
+                const(char)* _fSelector = __traits(identifier, DObjectMember);
+
+            static if (isSuperCall) 
+                return sendMessageSuper!(ReturnType!DObjectMember)(selfRef, sel_registerName()), __traits(parameters));
+            else 
+                return sendMessage!(ReturnType!DObjectMember)(selfRef, sel_registerName(_fSelector), __traits(parameters));
         }
     }
 }

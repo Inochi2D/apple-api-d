@@ -9,13 +9,7 @@
     Interface to the Objective-C Runtime.
 */
 module apple.objc.rt.base;
-
-//
-//      Helpful information
-//
-
-enum objc_classVarName(string ClassName) = "_OBJC_CLASS_$_"~ClassName;
-enum objc_protoVarName(string ProtoName) = "_OBJC_PROTOCOL_$_"~ProtoName;
+import apple.objc.rt.abi;
 
 //
 //      Core types
@@ -462,7 +456,7 @@ extern void objc_removeAssociatedObjects(id object);
 */
 extern void objc_msgSend(id instance, SEL, ...);
 
-version(ISA_X86) {
+version(OBJC_ABI_1) {
     
     /**
         Sends a message with a struct return value to an instance of a class.
@@ -480,7 +474,7 @@ version(ISA_X86) {
 */
 extern void objc_msgSendSuper(objc_super* super_, SEL, ...);
 
-version(ISA_X86) {
+version(OBJC_ABI_1) {
 
     /**
         Sends a message with a data-structure return value to the superclass of an instance of a class.

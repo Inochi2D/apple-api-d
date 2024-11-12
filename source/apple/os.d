@@ -35,14 +35,6 @@ version(AppleOS) {
     else version(AArch64) version = AppleOSARM64;
 }
 
-// Sets version tag for Intel devices.
-version(X86)            version = ISA_X86;
-else version(X86_64)    version = ISA_X86;
-
-// Sets version tag for ARM devices.
-version(ARM)            version = ISA_ARM;
-else version(AArch64)   version = ISA_ARM;
-
 
 alias Boolean           = bool;
 alias UInt8             = ubyte;
