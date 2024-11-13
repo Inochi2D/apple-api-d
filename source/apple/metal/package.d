@@ -23,7 +23,6 @@ enum Metal;
 mixin RequireAPIs!(Metal, Foundation, CoreFoundation, CoreData, CoreGraphics, ObjC);
 
 /// Link to Metal (on apple platforms)
-mixin LinkFramework!("AppKit");
 mixin LinkFramework!("Metal");
 
 public import apple.metal.mtltypes;
