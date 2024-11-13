@@ -50,6 +50,11 @@ public:
     }
 
     /**
+        Create string from reference
+    */ 
+    this(idref!NSString str) { super(str, true); }
+
+    /**
         Construct with UTF8 string.
     */
     this(const(char)* str) {
@@ -67,7 +72,8 @@ public:
         Casts NSString to CFStringRef
     */
     version(CoreFoundation) 
-    CFStringRef opCast(T)() if(is(T == CFStringRef)) => cast(CFStringRef)this.self();
+    CFStringRef toCFString() => cast(CFStringRef)this.self();
+
 
     // Link NSString.
     mixin ObjcLink;

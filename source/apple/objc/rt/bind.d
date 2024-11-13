@@ -18,6 +18,8 @@ import apple.objc.rt.base;
 import apple.objc.rt.abi;
 import std.traits;
 import std.meta;
+import std.array : join;
+import std.format : format;
 
 //
 //      UDAs
@@ -37,12 +39,7 @@ struct selector { string sel; }
     UDA for specifying a declared type member should not be bound
     to the Objective-C runtime.
 */
-struct nobind;
-
-/**
-    UDA for instance types.
-*/
-struct instancetype;
+struct objc_ignore;
 
 /**
     Higher level "id return" wrapper.
@@ -238,20 +235,10 @@ template SuperClass(T) {
 
 mixin template ObjcLinkObject(DClassObject) {
     static foreach(classMember; __traits(derivedMembers, DClassObject)) {
-        static if(classMember != "__dtor" && classMember != "__ctor") {
-            static if (!isAlias!(DClassObject, classMember)) {
-                static foreach(mRef; __traits(getOverloads, DClassObject, classMember)) {
-                    static if (!hasUDA!(mRef, nobind)) {
-                        static if (is(DClassObject == class)) {
-                            static if (!hasMember!(SuperClass!DClassObject, classMember) && (hasUDA!(mRef, selector) || hasFunctionAttributes!(mRef, "@property"))) {
-                                mixin ObjcLinkMember!(mRef, DClassObject);
-                            }
-                        } else static if (is(DClassObject == interface)) {
-                            static if ((hasUDA!(mRef, selector) || hasFunctionAttributes!(mRef, "@property"))) {
-                                mixin ObjcLinkMember!(mRef, DClassObject);
-                            }
-                        }
-                    }
+        static if (!isAlias!(DClassObject, classMember)) {
+            static foreach(mRef; __traits(getOverloads, DClassObject, classMember)) {
+                static if (ObjcMethodCanGenerate!mRef) {
+                    mixin ObjcLinkMember!(DClassObject, mRef);
                 }
             }
         }
@@ -261,7 +248,7 @@ mixin template ObjcLinkObject(DClassObject) {
 /**
     Creates a string parameter list
 */
-string paramList(alias funcPtr)() {
+string ObjcParamList(alias funcPtr)() {
     alias fParameters = Parameters!funcPtr;
     alias fParameterNames = ParameterIdentifierTuple!funcPtr;
     import std.array : join;
@@ -275,73 +262,89 @@ string paramList(alias funcPtr)() {
     return "(%s)".format(paramPairs.join(", "));
 }
 
-template ObjcLinkMember(alias DObjectMember, ParentObject, bool isSuperCall=false) {
+/// Gets selector base name for method
+template ObjcSelectorBaseName(alias DObjectMember) {
+    static if (hasUDA!(DObjectMember, selector))
+        enum ObjcSelectorBaseName = getUDAs!(DObjectMember, selector)[0].sel;
+    else 
+        enum ObjcSelectorBaseName = __traits(identifier, DObjectMember);
+}
+
+/// Gets selector name for method
+template ObjcSelectorName(alias DObjectMember) {
+    static if (hasFunctionAttributes!(DObjectMember, "@property") && (Parameters!DObjectMember).length == 1)
+        enum ObjcSelectorName = toObjcSetterSEL!(ObjcSelectorBaseName!DObjectMember);
+    else
+        enum ObjcSelectorName = ObjcSelectorBaseName!DObjectMember;
+}
+
+/// Gets whether a method can be generated.
+enum ObjcMethodCanGenerate(alias DObjectMember) =
+    !hasUDA!(DObjectMember, objc_ignore) && 
+    __traits(identifier, DObjectMember) != "__ctor" &&
+    __traits(identifier, DObjectMember) != "__dtor" && (
+        hasUDA!(DObjectMember, selector) ||
+        __traits(isStaticFunction, DObjectMember) ||
+        hasFunctionAttributes!(DObjectMember, "@property")
+    );
+
+enum ObjcMethodQualifiers(alias DObjectMember) = 
+    "%s ".format([__traits(getFunctionAttributes, DObjectMember)].join(" "));
+
+enum ObjcMethodShouldOverride(DObject, alias DObjectMember) =
+    __traits(isVirtualMethod, DObjectMember) && 
+    hasMember!(SuperClass!DObject, __traits(identifier, DObjectMember));
+
+enum ObjcReturnType(alias DObjectMember) = 
+    (ReturnType!DObjectMember).stringof~" ";
+
+/// Link a single member
+template ObjcLinkMember(DObject, alias DObjectMember) {
 
     // Basic information about the member.
     enum fName = __traits(identifier, DObjectMember);
-    enum fParamList = paramList!(DObjectMember);
+    enum fParamList = ObjcParamList!(DObjectMember);
+    enum fSelector = ObjcSelectorName!DObjectMember;
+    enum fQualifiers = ObjcMethodQualifiers!DObjectMember;
+    alias fReturnType = ReturnType!DObjectMember;
+    enum fReturnTypeName = ObjcReturnType!DObjectMember;
 
-    // Figure out the return type
-    static if (hasUDA!(DObjectMember, instancetype))
-        enum fReturnType = ParentObject.stringof~" ";
-    else
-        enum fReturnType = (ReturnType!DObjectMember).stringof~" ";
+    static if (ObjcMethodShouldOverride!(DObject, DObjectMember)) {
 
-
-    // Figure out which selector to use.
-    enum fHasSelector = hasUDA!(DObjectMember, selector);
-    static if (fHasSelector)
-        enum fSelector = getUDAs!(DObjectMember, selector)[0].sel;
-    else 
-        enum fSelector = __traits(identifier, DObjectMember);
-
-    static if (__traits(isVirtualMethod, DObjectMember) && hasMember!(SuperClass!ParentObject, fName)) {
-        enum fQualifiers = "@nogc nothrow ";
-
+        // For when we can override
         override
-        mixin(fQualifiers, fReturnType, fName, fParamList, q{{
-            static if (isSuperCall) 
-                return sendMessageSuper!(ReturnType!DObjectMember)(this.self, sel_registerName(fSelector), __traits(parameters));
-            else 
-                return sendMessage!(ReturnType!DObjectMember)(this.self, sel_registerName(fSelector), __traits(parameters));
-        }});
-    } else static if (hasFunctionAttributes!(DObjectMember, "@property")) {
-        enum fQualifiers = "@nogc nothrow @property ";
+        mixin(fQualifiers, fReturnTypeName, fName, fParamList, q{{
+            const(char)* sel = fSelector;
 
+            static if (is(fReturnType : NSObject))
+                return wrap(this.message!(idref!fReturnType)(sel, __traits(parameters)));
+            else
+                return this.message!fReturnType(sel, __traits(parameters));
+        }});
+    } else static if (__traits(isStaticFunction, DObjectMember)) {
+        
+        // Static functions
         pragma(mangle, DObjectMember.mangleof)
-        mixin(fQualifiers, fReturnType, fName, fParamList, q{{
-            static if (!fHasSelector && Parameters!DObjectMember.length > 0)
-                const(char)* _fSelector = toObjcSetterSEL!(fSelector);
-            else 
-                const(char)* _fSelector = fSelector;
+        mixin(fQualifiers, fReturnTypeName, fName, fParamList, q{{
+            const(char)* sel = fSelector;
 
-            static if (isSuperCall) 
-                return sendMessageSuper!(ReturnType!DObjectMember)(this.self, sel_registerName(_fSelector), __traits(parameters));
-            else 
-                return sendMessage!(ReturnType!DObjectMember)(this.self, sel_registerName(_fSelector), __traits(parameters));
+            static if (is(fReturnType : NSObject))
+                return wrap!fReturnType(DObject.message!(idref!fReturnType)(DObject.SELF_TYPE, sel, __traits(parameters)));
+            else
+                return DObject.message!fReturnType(DObject.SELF_TYPE, sel, __traits(parameters));
         }});
+    } else {
 
-    } else static if (hasUDA!(DObjectMember, selector)) {
-        static if (__traits(isStaticFunction, DObjectMember)) {
-            enum fQualifiers = "@nogc nothrow static ";
+        // And finally, the option where we just forcefully put in 
+        // a mangled replacement.
+        pragma(mangle, DObjectMember.mangleof)
+        mixin(fQualifiers, fReturnTypeName, fName, fParamList, q{{
+            const(char)* sel = fSelector;
 
-            pragma(mangle, DObjectMember.mangleof)
-            mixin(fQualifiers, fReturnType, fName, fParamList, q{{
-                static if (isSuperCall) 
-                    return sendMessageSuper!(ReturnType!DObjectMember)(cast(id)SELF_TYPE, sel_registerName(fSelector), __traits(parameters));
-                else 
-                    return sendMessage!(ReturnType!DObjectMember)(cast(id)SELF_TYPE, sel_registerName(fSelector), __traits(parameters));
-            }});
-        } else {
-            enum fQualifiers = "@nogc nothrow ";
-
-            pragma(mangle, DObjectMember.mangleof)
-            mixin(fQualifiers, fReturnType, fName, fParamList, q{{
-                static if (isSuperCall) 
-                    return sendMessageSuper!(ReturnType!DObjectMember)(this.self, sel_registerName(fSelector), __traits(parameters));
-                else 
-                    return sendMessage!(ReturnType!DObjectMember)(this.self, sel_registerName(fSelector), __traits(parameters));
-            }});
-        }
+            static if (is(fReturnType : NSObject))
+                return wrap(this.message!(idref!fReturnType)(sel, __traits(parameters)));
+            else
+                return this.message!fReturnType(sel, __traits(parameters));
+        }});
     }
 }

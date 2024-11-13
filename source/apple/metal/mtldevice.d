@@ -346,6 +346,20 @@ class MTLDevice : NSObject {
 public:
 
     /**
+        Creates a MTLDevice from reference
+    */
+    this(id ref_) {
+        super(ref_, false);
+    }
+
+    /**
+        Creates the system default device.
+    */
+    static MTLDevice createSystemDefaultDevice() @objc_ignore {
+        return wrap(MTLCreateSystemDefaultDevice());
+    }
+
+    /**
         The maximum threadgroup memory available to a compute kernel, in bytes.
     */
     @property NSUInteger maxThreadgroupMemoryLength() const;
@@ -543,13 +557,6 @@ public:
     @property bool shouldMaximizeConcurrentCompilation() const;
 
     /**
-        Creates the system default device.
-    */
-    this() {
-        super(MTLCreateSystemDefaultDevice());
-    }
-
-    /**
         Returns a Boolean value that indicates whether the GPU device supports the 
         feature set of a specific GPU family.
     */
@@ -567,9 +574,9 @@ public:
 /**
     Returns the device instance Metal selects as the default.
 */
-extern(C) id MTLCreateSystemDefaultDevice() @nogc nothrow;
+extern(C) idref!MTLDevice MTLCreateSystemDefaultDevice() @nogc nothrow;
 
 /**
     Returns an array of all the Metal device instances in the system.
 */
-extern(C) NSArray MTLCopyAllDevices() @nogc nothrow;
+extern(C) idref!NSArray MTLCopyAllDevices() @nogc nothrow;

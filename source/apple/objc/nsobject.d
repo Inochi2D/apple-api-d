@@ -17,6 +17,8 @@ mixin RequireAPIs!(ObjC);
 import apple.objc.rt;
 import apple.objc.rt : selector;
 
+import numem.core.memory;
+
 @ObjectiveC
 interface NSObjectProtocol {
 @nogc nothrow:
@@ -56,35 +58,17 @@ interface NSObjectProtocol {
     Base class of all Objective-C classes.
 */
 @ObjectiveC
-abstract
 class NSObject : NSObjectProtocol {
 @nogc nothrow:
 private:
     id self_;
 
+    /**
+        Decrements the receiver’s reference count.
+    */
+    void objc_dealloc() @selector("dealloc");
+
 protected:
-
-    /**
-        Sends a message (calls a function) based on the given selector.
-    */
-    T message(T, Args...)(const(char)* selector, Args args) {
-        return sendMessage!(T, Args)(this.self(), sel_registerName(selector), args);
-    }
-
-    /**
-        Sends a message to super class (calls a function) based on the given selector.
-    */
-    T messageSuper(T, Args...)(const(char)* selector, Args args) {
-        return sendMessageSuper!(T, Args)(this.superclass(), sel_registerName(selector), args);
-    }
-
-    /**
-        Sends a message (calls a function) based on the given selector.
-        A class instance will need to be specified.
-    */
-    static T message(T, Args...)(Class target, const(char)* selector, Args args) {
-        return sendMessage!(T, Args)(cast(id)target, sel_registerName(selector), args);
-    }
 
     /**
         Allows updating self value.
@@ -93,12 +77,44 @@ protected:
         this.self_ = newValue;
         return this.self_;
     }
+    
+    /**
+        Associates a D type with a key for this Objective-C instance.
+    */
+    final
+    void associate(K, V)(K key, V value) {
+        
+        // NOTE: We're misusing an Objective-C feature here to, basically
+        // store a pointer back to the D object via Objective-C
+        // associated objects.
+        // OBJC_ASSOCIATION_ASSIGN being unsafe should allow this.
+        objc_setAssociatedObject(this.self_, cast(void*)key, cast(id)value, objc_AssociationPolicy.OBJC_ASSOCIATION_ASSIGN);
+    }
+
+    /**
+        Removes an association by key.
+    */
+    final
+    void disassociate(K)(K key) {
+        objc_setAssociatedObject(this.self_, cast(void*)key, null, objc_AssociationPolicy.OBJC_ASSOCIATION_ASSIGN);
+    }
+
+    /**
+        Gets the association for this class
+    */
+    final
+    T getAssociation(T, K)(K key) {
+        return cast(T)objc_getAssociatedObject(this.self_, key);
+    }
 
     /**
         Base constructor of all NSObject-derived instances
     */
     this() {
         this.self_ = this.message!id(this.getClass(), "alloc");
+
+        if (!isAssociated)
+            this.associate(_OBJC_D_GLUE, this);
     }
 
     /**
@@ -117,6 +133,9 @@ public:
     */
     this(id selfId, bool retain=false) {
         this.self_ = selfId;
+
+        if (!isAssociated)
+            this.associate(_OBJC_D_GLUE, this);
         
         // Ref counting.
         if (retain)
@@ -127,6 +146,11 @@ public:
         Destructor of all NSObject-derived instances
     */
     ~this() {
+
+        // Remove assocation if there is one.
+        if (this.isAssociated)
+            this.disassociate(_OBJC_D_GLUE);
+        
         this.release();
     }
 
@@ -136,15 +160,31 @@ public:
     final id self() => self_;
 
     /**
-        Frees all memory assocaited with this instance.
+        Gets the handle of the association for this objective-c class.
+    */
+    final NSObject handle() => this.getAssociation!NSObject(_OBJC_D_GLUE);
+
+    /**
+        Forcefully deallocates the Objective-C object
+        and the wrapper class.
+
+        The class will be invalid after calling this.
     */
     @system
     final
-    void free() {
-        objc_destructInstance(self_);
-        object_dispose(self_);
-        this.self_ = null;
+    void deallocate() {
+        auto selfHandle = this.handle();
+        
+        this.objc_dealloc();
+        nogc_delete(selfHandle);
     }
+
+    /**
+        Gets whether this this object has an association with
+        its D wrapper class.
+    */
+    final
+    bool isAssociated() => objc_getAssociatedObject(this.self_, _OBJC_D_GLUE) !is null;
     
     /**
         Gets whether this object conforms to the specified prototype.
@@ -160,8 +200,39 @@ public:
         return this.isEqual(other.self_);
     }
 
+    /**
+        Sends a message (calls a function) based on the given selector.
+    */
+    T message(T, Args...)(const(char)* selector, Args args) inout {
+        return sendMessage!(T, Args)(cast(id)this.self_, sel_registerName(selector), args);
+    }
+
+    /**
+        Sends a message (calls a function) based on the given selector.
+        A class instance will need to be specified.
+    */
+    static T message(T, Args...)(Class target, const(char)* selector, Args args) {
+        return sendMessage!(T, Args)(cast(id)target, sel_registerName(selector), args);
+    }
+
     // Link NSObject.
     mixin ObjcLink;
+}
+
+/**
+    Wraps NSObject to a D type.
+
+    This wrapped type is *NOT* managed by the GC,
+    make sure to use the convenience `free` function.
+*/
+pragma(inline, true)
+auto ref wrap(T)(idref!T ref_) @nogc if (is(T : NSObject)) {
+    auto rval = cast(T)objc_getAssociatedObject(ref_, _OBJC_D_GLUE);
+    
+    if (!rval)
+        rval = nogc_new!T(ref_);
+
+    return rval;
 }
 
 /**
@@ -171,4 +242,8 @@ public:
 */
 SEL getSelector(const(char)* selector) {
     return sel_getUid(selector);
+}
+
+private {
+    extern(C) __gshared const(char)* _OBJC_D_GLUE = "_OBJC_D_GLUE";
 }
