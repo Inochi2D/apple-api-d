@@ -74,7 +74,6 @@ public:
     version(CoreFoundation) 
     CFStringRef toCFString() => cast(CFStringRef)this.self();
 
-
     // Link NSString.
     mixin ObjcLink;
 }

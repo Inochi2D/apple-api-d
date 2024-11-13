@@ -11,31 +11,42 @@
 module apple.os;
 
 /// Whether the OS is made by Apple.
-version(OSX) version = AppleOS;
-else version(iOS) version = AppleOS;
-else version(TVOS) version = AppleOS;
-else version(WatchOS) version = AppleOS;
-else version(VisionOS) version = AppleOS;
-
-/// Add macOS tag since apple renamed OSX to macOS.
-version(OSX) version = macOS;
+version(OSX) enum AppleOS = true;
+else version(iOS) enum AppleOS = true;
+else version(TVOS) enum AppleOS = true;
+else version(WatchOS) enum AppleOS = true;
+else version(VisionOS) enum AppleOS = true;
+else enum AppleOS = false;
 
 /// Whether the OS is made by Apple for mobile platforms.
-version(iOS) version = AppleMobileOS;
-else version(TVOS) version = AppleMobileOS;
-else version(WatchOS) version = AppleMobileOS;
-else version(VisionOS) version = AppleMobileOS;
+version(iOS) enum AppleMobileOS = true;
+else version(TVOS) enum AppleMobileOS = true;
+else version(WatchOS) enum AppleMobileOS = true;
+else version(VisionOS) enum AppleMobileOS = true;
+else enum AppleMobileOS = false;
 
 /// Define versions for the different architectures Apple supports.
-version(AppleOS) {
-    version(PPC) version = AppleOSPPC;
-    else version(X86) version = AppleOSIntel32;
-    else version(X86_64) version = AppleOSIntel64;
-    else version(ARM) version = AppleOSARM32;
-    else version(AArch64) version = AppleOSARM64;
+static if(AppleOS) {
 }
 
+// Power PC
+version(PPC) enum AppleIsPowerPC = true;
+else enum AppleIsPowerPC = false;
 
+// Intel
+version(X86) enum AppleIsIntel = true;
+else version(X86_64) enum AppleIsIntel = true;
+else enum AppleIsIntel = false;
+
+// ARM
+version(ARM) enum AppleIsARM = true;
+else version(AArch64) enum AppleIsARM = true;
+else enum AppleIsARM = false;
+
+// Gets whether the current compilation target is supported by Apple.
+enum AppleIsPlatformSupported = AppleOS && (AppleIsPowerPC || AppleIsIntel || AppleIsARM);
+
+// Declaration of base types.
 alias Boolean           = bool;
 alias UInt8             = ubyte;
 alias SInt8             = byte;
@@ -64,22 +75,21 @@ alias UTF8Char          = char;
 mixin template LinkFramework(frameworks...) {
     
     import apple.os;
-    version(AppleOS) {
+    static if(AppleOS) 
         static foreach(framework; frameworks) 
             pragma(linkerDirective, "-framework", framework);
-    }
 }
 
 /**
-    Ensure that if VersionSpec is declared as a version, that
-    all the dependencies are also declared.
+    Adds compile time error checking to ensure that the specified
+    APIs are actually included in compilation.
+
+    `VersionSpec` also defines the API currently being implemented.
+    If that version is not declared, the rest of the module is skipped.
 */
 mixin template RequireAPIs(VersionSpec, Required...) {
-    version(VersionSpec) {
-        static foreach(v; Required) {
-            version = v;
-        }
+version(VersionSpec):
+    static foreach(v; Required) {
+        version(v) {} else static assert(0, VersionSpec.stringof, " requires ", v.stringof, " but it is not included!");
     }
-
-    version(VersionSpec):
 }

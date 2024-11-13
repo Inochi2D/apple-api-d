@@ -39,6 +39,13 @@ public:
     }
 
     /**
+        Binds an NSArray from its low level implementation
+    */
+    this(id ref_) {
+        super(ref_);
+    }
+
+    /**
         Creates an array which is a copy of another array.
     */
     this(NSArray toCopy) {
@@ -61,14 +68,38 @@ public:
     /**
         Returns the object located at the specified index.
     */
-    NSObject objectAtIndex(NSUInteger index) @selector("objectAtIndex:");
+    id objectAtIndex(NSUInteger index) @selector("objectAtIndex:");
 
     /**
         Casts NSArray to CFArrayRef
     */
-    version(CoreFoundation) 
-    CFArrayRef opCast(T)() if(is(T == CFArrayRef)) => cast(CFArrayRef)this.self();
+    version(CoreFoundation)
+    CFArrayRef toCFArray() => cast(CFArrayRef)this.self();
 
     // Link NSArray.
     mixin ObjcLink;
+}
+
+/**
+    Typed wrapper over NSArray
+*/
+class NSArrayT(T = NSObject) : NSArray {
+@nogc nothrow:
+public:
+
+    /// Creates new empty array
+    this() { super(); }
+
+    /// Creates array from ref
+    this(id ref_) { super(ref_); }
+
+    /**
+        Gets object at specified index
+    */
+    T opIndex(NSUInteger index) {
+        return wrap(cast(idref!T)this.objectAtIndex(index));
+    }
+
+    /// For D compat.
+    alias length = count;
 }

@@ -360,6 +360,14 @@ public:
     }
 
     /**
+        Returns an NSArray over all the MTLDevice instances
+        in the system.
+    */
+    static NSArrayT!MTLDevice allDevices() @objc_ignore {
+        return wrap(MTLCopyAllDevices());
+    }
+
+    /**
         The maximum threadgroup memory available to a compute kernel, in bytes.
     */
     @property NSUInteger maxThreadgroupMemoryLength() const;
@@ -579,4 +587,4 @@ extern(C) idref!MTLDevice MTLCreateSystemDefaultDevice() @nogc nothrow;
 /**
     Returns an array of all the Metal device instances in the system.
 */
-extern(C) idref!NSArray MTLCopyAllDevices() @nogc nothrow;
+extern(C) idref!(NSArrayT!MTLDevice) MTLCopyAllDevices() @nogc nothrow;
