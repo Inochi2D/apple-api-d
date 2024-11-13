@@ -24,9 +24,16 @@ import apple.objc.rt : selector;
 
 mixin RequireAPIs!(Metal, Foundation);
 
-@ObjectiveC
+@ObjectiveC @ObjcProtocol
 class MTLBuffer : NSObject {
 @nogc nothrow:
 public:
     
+    /**
+        Base constructor
+    */
+    this(id self) { super(self); }
+
+    // Link
+    mixin ObjcLink!("_MTLBuffer");
 }

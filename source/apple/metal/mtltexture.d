@@ -159,20 +159,17 @@ public:
     @property void swizzle(MTLTextureSwizzleChannels);
 
     /**
+        Base constructor
+    */
+    this(id self) { super(self); }
+
+    /**
         Constructs a new empty Texture Descriptor
     */
     this() { 
-        super(); 
-        this.init();
+        super(this.alloc());
+        this.self = this.init();
     }
-
-    /**
-        Makes a reference to a MTLTextureDescriptor
-    */
-    this(MTLTextureDescriptor ref_) {
-        super(ref_.self(), true);
-    }
-
 
     // Link MTLTextureDescriptor.
     mixin ObjcLink;
@@ -298,7 +295,7 @@ public:
     /**
         The parent texture used to create this texture, if any.
     */
-    @property idref!MTLTexture parentTexture() const;
+    @property MTLTexture parentTexture() const;
 
     /**
         The base level of the parent texture used to create this texture.
@@ -313,7 +310,7 @@ public:
     /**
         The source buffer used to create this texture, if any.
     */
-    @property idref!MTLBuffer buffer() const;
+    @property MTLBuffer buffer() const;
 
     /**
         The type of compression to use for the texture

@@ -35,7 +35,7 @@ public:
     /**
         Default constructor without any init.
     */
-    this() { super(); }
+    this() { super(this.alloc()); }
 
     /**
         Creates a value object containing the specified pointer.

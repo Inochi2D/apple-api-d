@@ -50,15 +50,15 @@ public:
     }
 
     /**
-        Create string from reference
-    */ 
-    this(idref!NSString str) { super(str, true); }
+        Base constructor
+    */
+    this(id self) { super(self); }
 
     /**
         Construct with UTF8 string.
     */
     this(const(char)* str) {
-        super();
+        super(this.alloc());
         this.self = this.initWithUTF8String(str);
     }
 

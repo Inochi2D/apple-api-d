@@ -17,6 +17,11 @@ private:
 
 public:
 
+    /**
+        Base constructor
+    */
+    this(id self) { super(self); }
+
     // Link NSDictionary.
     mixin ObjcLink;
 }

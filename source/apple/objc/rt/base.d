@@ -178,6 +178,11 @@ extern Ivar class_getClassVariable(Class cls, const(char)* name);
 /**
     Describes the instance variables declared by a class.
 */
+extern Ivar* class_addIvar(Class cls, const(char)* name, int size, ubyte alignment, const(char)* types);
+
+/**
+    Describes the instance variables declared by a class.
+*/
 extern Ivar* class_copyIvarList(Class cls, uint* outCount);
 
 /**
@@ -512,3 +517,12 @@ extern SEL sel_getUid(const(char)*);
     Returns a Boolean value that indicates whether two selectors are equal.
 */
 extern bool sel_isEqual(SEL lhs, SEL rhs);
+
+//
+//      Implementation
+//
+
+/**
+    Creates a pointer to a function that calls the specified block when the method is called.
+*/
+IMP imp_implementationWithBlock(id block);

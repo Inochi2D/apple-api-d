@@ -19,6 +19,7 @@ import apple.objc;
 import apple.os;
 import apple.objc.rt;
 import apple.objc.rt : selector;
+import apple.metal.mtlcommandqueue;
 
 mixin RequireAPIs!(Metal, Foundation);
 
@@ -346,28 +347,6 @@ class MTLDevice : NSObject {
 public:
 
     /**
-        Creates a MTLDevice from reference
-    */
-    this(id ref_) {
-        super(ref_, false);
-    }
-
-    /**
-        Creates the system default device.
-    */
-    static MTLDevice createSystemDefaultDevice() @objc_ignore {
-        return wrap(MTLCreateSystemDefaultDevice());
-    }
-
-    /**
-        Returns an NSArray over all the MTLDevice instances
-        in the system.
-    */
-    static NSArrayT!MTLDevice allDevices() @objc_ignore {
-        return wrap(MTLCopyAllDevices());
-    }
-
-    /**
         The maximum threadgroup memory available to a compute kernel, in bytes.
     */
     @property NSUInteger maxThreadgroupMemoryLength() const;
@@ -575,6 +554,37 @@ public:
     */
     bool supportsVertexAmplificationCount(NSUInteger count) const @selector("supportsVertexAmplificationCount:");
 
+
+    /**
+        Creates the system default device.
+    */
+    static MTLDevice createSystemDefaultDevice() @objc_ignore {
+        return wrap!MTLDevice(MTLCreateSystemDefaultDevice());
+    }
+
+    /**
+        Returns an NSArray over all the MTLDevice instances
+        in the system.
+    */
+    static NSArrayT!MTLDevice allDevices() @objc_ignore {
+        return wrap!(NSArrayT!MTLDevice)(MTLCopyAllDevices());
+    }
+
+    /**
+        Base constructor
+    */
+    this(id self) { super(self); }
+
+    /**
+        Creates a queue you use to submit rendering and computation commands to a GPU.
+    */
+    MTLCommandQueue newCommandQueue() @selector("newCommandQueue");
+
+    /**
+        Creates a queue you use to submit rendering and computation commands to a GPU.
+    */
+    MTLCommandQueue newCommandQueue(NSUInteger maxCommandBufferCount) @selector("newCommandQueueWithMaxCommandBufferCount:");
+
     /// Link MTLDevice.
     mixin ObjcLink!("_MTLDevice");
 }
@@ -582,9 +592,9 @@ public:
 /**
     Returns the device instance Metal selects as the default.
 */
-extern(C) idref!MTLDevice MTLCreateSystemDefaultDevice() @nogc nothrow;
+extern(C) id MTLCreateSystemDefaultDevice() @nogc nothrow;
 
 /**
     Returns an array of all the Metal device instances in the system.
 */
-extern(C) idref!(NSArrayT!MTLDevice) MTLCopyAllDevices() @nogc nothrow;
+extern(C) id MTLCopyAllDevices() @nogc nothrow;

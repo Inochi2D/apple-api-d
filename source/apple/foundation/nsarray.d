@@ -35,21 +35,19 @@ public:
         Creates an empty NSArray
     */
     this() {
-        super(this.message!id(this.getClass(), "array"));
+        super(this.message!id(this.objc_type(), "array"));
     }
 
     /**
         Binds an NSArray from its low level implementation
     */
-    this(id ref_) {
-        super(ref_);
-    }
+    this(id ref_) { super(ref_); }
 
     /**
         Creates an array which is a copy of another array.
     */
     this(NSArray toCopy) {
-        super(this.message!id(this.getClass(), "arrayWithArray:", toCopy));
+        super(this.message!id(this.objc_type(), "arrayWithArray:", toCopy));
     }
     
     /**
@@ -97,7 +95,7 @@ public:
         Gets object at specified index
     */
     T opIndex(NSUInteger index) {
-        return wrap(cast(idref!T)this.objectAtIndex(index));
+        return wrap!T(this.objectAtIndex(index));
     }
 
     /// For D compat.
