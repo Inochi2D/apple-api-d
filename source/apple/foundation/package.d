@@ -23,3 +23,5 @@ mixin LinkFramework!("Foundation");
 
 public import apple.objc.nsobject;
 public import apple.foundation.nsstring;
+public import apple.foundation.nsarray;
+public import apple.foundation.nsdictionary;

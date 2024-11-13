@@ -34,7 +34,7 @@ interface NSObjectProtocol {
     /**
         Returns a Boolean value that indicates whether the receiver and a given object are equal.
     */
-    bool isEqual(id obj) @selector("isEqual:");
+    bool isEqual(inout(id) obj) @selector("isEqual:");
 
     /**
         Returns an integer that can be used as a table address in a hash table structure.
@@ -94,7 +94,6 @@ protected:
         return this.self_;
     }
 
-
     /**
         Base constructor of all NSObject-derived instances
     */
@@ -103,27 +102,64 @@ protected:
     }
 
     /**
-        Instantiates NSObject with a pre-existing object instance id.
+        Calls the default init function
     */
-    this(id selfId) {
-        this.self_ = selfId;
+    final
+    ref auto init() {
+        this.self_ = this.message!id(this.getClass(), "init");
+        return this;
     }
 
 public:
 
     /**
-        Denstructor of all NSObject-derived instances
+        Instantiates object with a pre-existing object instance id.
+    */
+    this(id selfId, bool retain=false) {
+        this.self_ = selfId;
+        
+        // Ref counting.
+        if (retain)
+            this.retain();
+    }
+
+    /**
+        Destructor of all NSObject-derived instances
     */
     ~this() {
-        objc_destructInstance(self_);
-        object_dispose(self_);
+        this.release();
     }
 
     /**
         Gets the underlying Objective-C reference.
     */
     final id self() => self_;
+
+    /**
+        Frees all memory assocaited with this instance.
+    */
+    @system
+    final
+    void free() {
+        objc_destructInstance(self_);
+        object_dispose(self_);
+        this.self_ = null;
+    }
     
+    /**
+        Gets whether this object conforms to the specified prototype.
+    */
+    bool conformsTo(T)() if (isObjectiveCProtocol!T) {
+        return class_conformsToProtocol(this.getClass(), T.PROTOCOL);
+    }
+
+    /**
+        Implements equality comparison
+    */
+    bool opEquals(T)(T other) @nobind if (is(T : NSObject)) {
+        return this.isEqual(other.self_);
+    }
+
     // Link NSObject.
     mixin ObjcLink;
 }

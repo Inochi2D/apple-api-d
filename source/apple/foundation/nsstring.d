@@ -64,12 +64,10 @@ public:
     string toString() => cast(string)this.UTF8String()[0..this.length()];
 
     /**
-        Casts NSString to CoreFoundation String
+        Casts NSString to CFStringRef
     */
     version(CoreFoundation) 
-    CFStringRef opCast(T)() if(is(T == CFStringRef)) {
-        return cast(CFStringRef)this.self();
-    }
+    CFStringRef opCast(T)() if(is(T == CFStringRef)) => cast(CFStringRef)this.self();
 
     // Link NSString.
     mixin ObjcLink;

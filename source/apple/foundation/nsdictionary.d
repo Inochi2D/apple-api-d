@@ -12,5 +12,11 @@ mixin RequireAPIs!(Foundation);
 */
 @ObjectiveC
 class NSDictionary : NSObject {
+@nogc nothrow:
+private:
 
+public:
+
+    // Link NSDictionary.
+    mixin ObjcLink;
 }

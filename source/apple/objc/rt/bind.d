@@ -11,7 +11,7 @@
 module apple.objc.rt.bind;
 import apple.os;
 
-import apple.objc : ObjC;
+import apple.objc : ObjC, NSObject;
 mixin RequireAPIs!(ObjC);
 
 import apple.objc.rt.base;
@@ -45,6 +45,21 @@ struct nobind;
 struct instancetype;
 
 /**
+    Higher level "id return" wrapper.
+*/
+struct idref(T) if (is(T : NSObject)) {
+    alias RType = T;
+    alias ref_ this;
+
+    /**
+        The actual reference to the ID, 
+        you can pass this to object constructor
+        to get a new object.
+    */
+    id ref_;
+}
+
+/**
     Gets whether the specified member is an alias.
 */
 template isAlias(T, string member) {
@@ -56,19 +71,6 @@ template isAlias(T, string member) {
 //
 //      Argument Handling
 //
-template toObjCArg(alias arg) {
-    import apple.objc.nsobject;
-
-    static if (is(typeof(arg) : NSObject))
-        alias toObjCArg = arg.self();
-    else
-        alias toObjCArg = arg;
-}
-
-template toObjCArgs(Args...) {
-    alias toObjCArgs = staticMap!(toObjCArg, AliasSeq!Args);
-}
-
 template toObjCArgType(alias arg) {
     import apple.objc.nsobject;
 
@@ -81,7 +83,6 @@ template toObjCArgType(alias arg) {
 template toObjCArgTypes(Args...) {
     alias toObjCArgTypes = staticMap!(toObjCArgType, AliasSeq!Args);
 }
-
 
 //
 //      Messages
@@ -96,15 +97,15 @@ T sendMessage(T = void, Args...)(id instance, SEL selector, Args args) {
     static if (OBJC_ABI == 1) {
         static if(is(T == struct)) {
             T toReturn = T.init;
-            objc_msgSend_stret(&sReturn, instance, selector, toObjCArgs!args);
+            objc_msgSend_stret(&sReturn, instance, selector, args);
             return toReturn;
         } else static if (isFloating!T) {
-            return (cast(fn)&objc_msgSend_fpret)(instance, selector, toObjCArgs!args);
+            return (cast(fn)&objc_msgSend_fpret)(instance, selector, args);
         } else {
-            return (cast(fn)&objc_msgSend)(instance, selector, toObjCArgs!args);
+            return (cast(fn)&objc_msgSend)(instance, selector, args);
         }
     } else static if (OBJC_ABI == 2) {
-        return (cast(fn)&objc_msgSend)(instance, selector, toObjCArgs!args);
+        return (cast(fn)&objc_msgSend)(instance, selector, args);
     } else static assert(0, "ABI is not supported!");
 }
 
@@ -165,7 +166,9 @@ bool inherits(Class self, Class toCheck) {
     Returns a setter selector from a name
 */
 template toObjcSetterSEL(string name) {
-    enum toObjcSetterSEL = "set"~name[0].toUpper()~name[1..$]~":";
+    import std.ascii;
+    import std.string : toStringz;
+    enum const(char)* toObjcSetterSEL = ("set"~name[0].toUpper()~name[1..$]~":\0").ptr;
 }
 
 /**
@@ -215,6 +218,14 @@ mixin template ObjcLink(string name=null) {
         static foreach(iface; InterfacesTuple!Self)
             mixin ObjcLinkObject!iface;
         
+    } else static if (isObjectiveCProtocol!Self) {
+
+        // Create C const object.
+        pragma(mangle, objc_protoVarName!(SelfLinkName))
+        mixin(q{extern(C) extern __gshared objc_protocol }, "Objc_Proto_", SelfLinkName, ";");
+
+        mixin(q{static Protocol PROTOCOL = &}, "Objc_Proto_", SelfLinkName, ";");
+    
     } else static assert(0, "Type can not be bound!");
 }
 
@@ -230,13 +241,15 @@ mixin template ObjcLinkObject(DClassObject) {
         static if(classMember != "__dtor" && classMember != "__ctor") {
             static if (!isAlias!(DClassObject, classMember)) {
                 static foreach(mRef; __traits(getOverloads, DClassObject, classMember)) {
-                    static if (is(DClassObject == class)) {
-                        static if (!hasMember!(SuperClass!DClassObject, classMember) && (hasUDA!(mRef, selector) || hasFunctionAttributes!(mRef, "@property"))) {
-                            mixin ObjcLinkMember!(mRef, DClassObject);
-                        }
-                    } else static if (is(DClassObject == interface)) {
-                        static if ((hasUDA!(mRef, selector) || hasFunctionAttributes!(mRef, "@property"))) {
-                            mixin ObjcLinkMember!(mRef, DClassObject);
+                    static if (!hasUDA!(mRef, nobind)) {
+                        static if (is(DClassObject == class)) {
+                            static if (!hasMember!(SuperClass!DClassObject, classMember) && (hasUDA!(mRef, selector) || hasFunctionAttributes!(mRef, "@property"))) {
+                                mixin ObjcLinkMember!(mRef, DClassObject);
+                            }
+                        } else static if (is(DClassObject == interface)) {
+                            static if ((hasUDA!(mRef, selector) || hasFunctionAttributes!(mRef, "@property"))) {
+                                mixin ObjcLinkMember!(mRef, DClassObject);
+                            }
                         }
                     }
                 }
@@ -274,8 +287,10 @@ template ObjcLinkMember(alias DObjectMember, ParentObject, bool isSuperCall=fals
     else
         enum fReturnType = (ReturnType!DObjectMember).stringof~" ";
 
+
     // Figure out which selector to use.
-    static if (hasUDA!(DObjectMember, selector))
+    enum fHasSelector = hasUDA!(DObjectMember, selector);
+    static if (fHasSelector)
         enum fSelector = getUDAs!(DObjectMember, selector)[0].sel;
     else 
         enum fSelector = __traits(identifier, DObjectMember);
@@ -295,8 +310,8 @@ template ObjcLinkMember(alias DObjectMember, ParentObject, bool isSuperCall=fals
 
         pragma(mangle, DObjectMember.mangleof)
         mixin(fQualifiers, fReturnType, fName, fParamList, q{{
-            static if (Parameters!DObjectMember.length > 0)
-                const(char)* _fSelector = !toObjcSetterSEL(fSelector);
+            static if (!fHasSelector && Parameters!DObjectMember.length > 0)
+                const(char)* _fSelector = toObjcSetterSEL!(fSelector);
             else 
                 const(char)* _fSelector = fSelector;
 
