@@ -103,7 +103,13 @@ public:
     /**
         Destructor of all NSObject-derived instances
     */
-    ~this() { }
+    ~this() {
+        if (self_) {
+            drt_wrap_remove(self_);
+            this.release();
+            this.self_ = null;
+        }
+    }
 
     /**
         Base constructor
@@ -113,12 +119,23 @@ public:
     /**
         Called when the DRT type is being wrapped.
     */
-    void notifyWrap(id byWhom) @nogc nothrow { }
+    void notifyWrap(id byWhom) { }
 
     /**
         Called when the DRT type is being unwrapped.
     */
-    void notifyUnwrap(id byWhom) @nogc nothrow { }
+    void notifyUnwrap(id byWhom) { }
+
+    /**
+        Called when the DRT type is being destroyed.
+    */
+    void notifyDealloc(id byWhom) { 
+        this.self_ = null;
+
+        // This won't free other instances!
+        NSObject self = this;
+        nogc_delete(self);
+    }
 
     /**
         Gets the handle of the association for this objective-c class.

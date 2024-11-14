@@ -42,6 +42,12 @@ public:
     void notifyUnwrap(id byWhom) @nogc nothrow;
 
     /**
+        Called when the DRT type is being destroyed.
+    */
+    @objc_ignore
+    void notifyDealloc(id byWhom) @nogc nothrow;
+
+    /**
         Gets a reference to the Objective-C object
         this bindable is linked to.
     */
@@ -148,32 +154,30 @@ T drt_message(T = void, Args...)(id instance, const(char)* selector, Args args) 
 /**
     Sends a message to an object's super class
 */
-T drt_message_super(T = void)(inout(id) superclass, inout(id) instance, inout(SEL) selector, ...) {
-    alias fn = T function(inout(id), inout(SEL), toObjCArgTypes!(Args)) @nogc nothrow;
+T drt_message_super(T = void, Args...)(inout(id) instance, inout(SEL) selector, Args args) {
+    alias fn = T function(inout(objc_super*), inout(SEL), toObjCArgTypes!(Args)) @nogc nothrow;
 
-    objc_super spInstance = objc_super(
-        reciever: instance,
-        superClass: superclass
+    objc_super _super = objc_super(
+        reciever: cast(id)instance,
+        superClass: class_getSuperclass(object_getClass(cast(id)instance))
     );
-
-    debug assert(instance.inherits(superclass), "Tried to send message to super-class that wasn't actually a super class.");
 
     static if (OBJC_ABI == 1) {
         static if(is(T == struct)) {
-            return (cast(fn)&objc_msgSendSuper_stret)(instance, selector, args);
+            return (cast(fn)&objc_msgSendSuper_stret)(&_super, selector, args);
         } else {
-            return (cast(fn)&objc_msgSendSuper)(instance, selector, args);
+            return (cast(fn)&objc_msgSendSuper)(&_super, selector, args);
         }
     } else static if (OBJC_ABI == 2) {
-        return (cast(fn)&objc_msgSendSuper)(instance, selector, args);
+        return (cast(fn)&objc_msgSendSuper)(&_super, selector, args);
     } else static assert(0, "ABI is not supported!");
 }
 
 /**
     Sends a message to an object's super class
 */
-T drt_message_super(T = void)(id superclass, id instance, const(char)* selector, ...) {
-    return cast(T)drt_message_super!(T, Args)(superclass, instance, sel_getUid(selector), args);
+T drt_message_super(T = void, Args...)(id instance, const(char)* selector, Args args) {
+    return cast(T)drt_message_super!(T, Args)(instance, sel_getUid(selector), args);
 }
 
 //
@@ -209,6 +213,21 @@ T drt_wrap(T)(id from) if (is(T : DRTBindable)) {
 }
 
 /**
+    Removes wrapper object from `from`
+*/
+void drt_wrap_remove(id from) {
+    id obj_ = _drt_get_wrap_obj(from);
+    if (obj_) {
+        __drt_unwrap(obj_, _DRT_unwrap);
+        _drt_set_wrap_obj(from, null);
+
+        // Release *after* so that we don't
+        // end up destroying the other object.
+        drt_message(obj_, "release");
+    }
+}
+
+/**
     Gets a handle to the DRT wrapper object.
 */
 id drt_get_handle(id to) {
@@ -239,17 +258,17 @@ void _drt_set_wrap_obj(id ref_, id wrap_) {
 id _drt_bind_wrap_obj(id ref_, DRTBindable bindable) {
     
     // Get existing wrapper and re-wrap it if neccesary.
-    id _obj = _drt_get_wrap_obj(ref_);
-    if (_obj) {
-        __drt_wrap(_obj, _DRT_wrap, bindable);
-        return _obj; 
+    id obj_ = _drt_get_wrap_obj(ref_);
+    if (obj_) {
+        __drt_wrap(obj_, _DRT_wrap, bindable);
+        return obj_; 
     }
 
     // No wrapper existed, we need to create a new one.
-    _obj = _drt_new();
-    __drt_wrap(_obj, _DRT_wrap, bindable);
-    _drt_set_wrap_obj(ref_, _obj);
-    return _obj;
+    obj_ = _drt_new();
+    __drt_wrap(obj_, _DRT_wrap, bindable);
+    _drt_set_wrap_obj(ref_, obj_);
+    return obj_;
 }
 
 /**
@@ -291,9 +310,9 @@ void _drt_wrap_init() {
 id _drt_new() {
     
     // Alloc and init our type.
-    id _obj = drt_message!id(cast(id)_DRT, "alloc");
-    _obj = drt_message!id(_obj, "init");
-    return _obj;
+    id obj_ = drt_message!id(cast(id)_DRT, "alloc");
+    obj_ = drt_message!id(obj_, "init");
+    return obj_;
 }
 
 /**
@@ -334,19 +353,16 @@ extern(C) void __drt_unwrap(id self, SEL _cmd) {
 
 // Implementation of dealloc
 extern(C) void __drt_dealloc(id self, SEL _cmd) {
-    
-    // Unwrap and destroy DRTBindable.
     if (auto _this = _drt_get_bindable(self)) {
-        _this.notifyUnwrap(self);
-        nogc_delete!(DRTBindable)(_this);
+        // Unwrap first
+        __drt_unwrap(self, _DRT_unwrap);
+
+        // Then dealloc
+        _this.notifyDealloc(self);
     }
 
     // Call super-class dealloc function.
-    Class selfclass = object_getClass(self);
-    Class superclass = class_getSuperclass(selfclass);
-
-    auto supercall = objc_super(self, superclass);
-    objc_msgSendSuper(&supercall, _DRT_dealloc);
+    drt_message_super(self, "dealloc");
 }
 
 pragma(mangle, "DRT_CLASS_$_DRT")
