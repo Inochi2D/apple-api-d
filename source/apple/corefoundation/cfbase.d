@@ -10,6 +10,7 @@
 */
 module apple.corefoundation.cfbase;
 import apple.corefoundation.cfallocator;
+import apple.corefoundation.cfstring;
 import apple.os;
 
 /// Enum used as a version tag.
@@ -30,11 +31,6 @@ extern(C) @nogc nothrow:
     The current version of the Core Foundation framework
 */
 __gshared double kCFCoreFoundationVersionNumber;
-
-/**
-    A CFNullRef singleton instance.
-*/
-extern const __gshared CFNullRef kCFNull;
 
 enum kCFCoreFoundationVersionNumber10_0     = 196.4;
 enum kCFCoreFoundationVersionNumber10_0_3   = 196.5;

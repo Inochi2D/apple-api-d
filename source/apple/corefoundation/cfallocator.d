@@ -7,6 +7,7 @@
 
 module apple.corefoundation.cfallocator;
 import apple.corefoundation.cfbase;
+import apple.corefoundation.cfstring;
 import apple.os;
 import apple;
 

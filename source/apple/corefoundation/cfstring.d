@@ -9,14 +9,33 @@
     CFString
 */
 module apple.corefoundation.cfstring;
-import apple.corefoundation.cfbase;
-import apple.corefoundation.cfallocator;
 import apple.corefoundation;
+import apple.foundation;
 import apple;
 import apple.os;
 
 mixin RequireAPIs!(CoreFoundation);
 extern(C) @nogc nothrow:
+
+/**
+    An Immutable CoreFoundation String
+*/
+struct CFStringRef {
+    version(Foundation) @TollFreeBridged!NSString CFTypeRef isa;
+    else CFTypeRef isa;
+
+    alias isa this;
+}
+
+/**
+    A Mutable CoreFoundation String
+*/
+struct CFMutableStringRef {
+    version(Foundation) @TollFreeBridged!NSMutableString CFTypeRef isa;
+    else CFTypeRef isa;
+    
+    alias isa this;
+}
 
 /**
     An integer type for constants used to specify supported string encodings in various CFString functions.

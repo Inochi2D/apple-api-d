@@ -11,11 +11,11 @@
 module apple.foundation.nsvalue;
 import apple.corefoundation;
 import apple.foundation;
-import apple.objc.rt;
-import apple.objc.rt : selector;
+import apple.objc;
+import apple.objc : selector;
 import apple.os;
 
-mixin RequireAPIs!(Foundation);
+mixin RequireAPIs!(Foundation, CoreFoundation, ObjC);
 
 /**
     NSValue

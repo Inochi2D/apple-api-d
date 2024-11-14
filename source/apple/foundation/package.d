@@ -21,6 +21,8 @@ mixin RequireAPIs!(Foundation, ObjC, CoreFoundation);
 /// Link to Foundation (on apple platforms)
 mixin LinkFramework!("Foundation");
 
+public import apple.foundation.nsbridge;
+
 public import apple.foundation.nsobject;
 public import apple.foundation.nsstring;
 public import apple.foundation.nsarray;

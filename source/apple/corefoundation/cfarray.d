@@ -9,25 +9,34 @@
     CFArray
 */
 module apple.corefoundation.cfarray;
-import apple.corefoundation.cfallocator;
-import apple.corefoundation.cfbase;
+import apple.corefoundation;
+import apple.foundation;
 import apple;
 import apple.os;
 
 mixin RequireAPIs!(CoreFoundation);
 extern(C) @nogc nothrow:
 
-struct __CFArray;
-
 /**
-    Handle to a immutable CFArray
+    Handle to an immutable CFArray
 */
-alias CFArrayRef = const(__CFArray)*;
+struct CFArrayRef {
+    version(Foundation) @TollFreeBridged!NSArray CFTypeRef isa;
+    else CFTypeRef isa;
+
+    alias isa this;
+}
 
 /**
     Handle to a mutable CFArray
 */
-alias CFMutableArrayRef = __CFArray*;
+struct CFMutableArrayRef {
+    version(Foundation) @TollFreeBridged!NSMutableArray CFTypeRef isa;
+    else CFTypeRef isa;
+
+    alias isa this;
+}
+
 alias CFArrayRetainCallBack = const(void)* function(CFAllocatorRef allocator, const(void)* value);
 alias CFArrayReleaseCallBack = void	function(CFAllocatorRef allocator, const(void)* value);
 alias CFArrayCopyDescriptionCallBack = CFStringRef function(const(void)* value);

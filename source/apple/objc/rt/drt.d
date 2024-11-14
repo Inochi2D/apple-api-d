@@ -17,49 +17,91 @@ import apple.objc;
 import numem.core.memory;
 import apple.os;
 import core.stdc.math;
+import numem.core.memory;
 
 mixin RequireAPIs!(ObjC);
 
 @nogc nothrow:
 
 /**
-    Interface implemented by all DRT bindable types.
+    Base class implemented by all DRT bindable types.
 */
-interface DRTBindable {
+abstract
+class DRTBindable {
 nothrow @nogc:
+private:
+    id self_;
+
+protected:
+
+    /**
+        Allows updating self value.
+    */
+    final
+    @objc_ignore
+    @property id self(id newValue) { this.self_ = newValue; return self_; }
+
+    /**
+        Tells the DRT subsystem to wrap this class instance to the
+        Objective-C class.
+    */
+    final
+    @objc_ignore
+    void selfwrap() {
+        _drt_wrap_existing(this.self_, this);
+    }
+
 public:
 
     /**
-        Called when the DRT type is being wrapped.
+        Gets the handle of the association for this objective-c class.
     */
+    final
     @objc_ignore
-    void notifyWrap(id byWhom) @nogc nothrow;
+    @property id drt_handle() => drt_get_handle(self_);
 
     /**
-        Called when the DRT type is being unwrapped.
+        Gets the underlying Objective-C reference.
     */
+    final
     @objc_ignore
-    void notifyUnwrap(id byWhom) @nogc nothrow;
-
-    /**
-        Called when the DRT type is being destroyed.
-    */
-    @objc_ignore
-    void notifyDealloc(id byWhom) @nogc nothrow;
-
-    /**
-        Gets a reference to the Objective-C object
-        this bindable is linked to.
-    */
-    @objc_ignore
-    @property id self() inout;
+    @property id self() inout => cast(id)this.self_;
 
     /**
         Gets the underlying Objective-C type
         Either a Class or Protocol.
     */
     @objc_ignore
-    @property id objc_type() inout;
+    @property id objc_type() inout => null;
+
+    /**
+        Base constructor
+    */
+    this(id self) { this.self_ = self; }
+
+    /**
+        Called when the DRT type is being wrapped.
+    */
+    @objc_ignore
+    void notifyWrap(id byWhom) { }
+
+    /**
+        Called when the DRT type is being unwrapped.
+    */
+    @objc_ignore
+    void notifyUnwrap(id byWhom) { }
+
+    /**
+        Called when the DRT type is being destroyed.
+    */
+    @objc_ignore
+    void notifyDealloc(id byWhom) { 
+        this.self_ = null;
+
+        // This won't free other instances!
+        DRTBindable self = this;
+        nogc_delete(self);
+    }
 
     /**
         Sends a message (calls a function) based on the given selector.
@@ -91,7 +133,6 @@ public:
     static T wrap(T)(id self) {
         return drt_wrap!T(self);
     }
-
 }
 
 /**
@@ -239,6 +280,19 @@ id drt_get_handle(id to) {
 }
 
 private extern(C):
+
+/**
+    Allows specifying an existing class instance to wrap as.
+*/
+void _drt_wrap_existing(id from, DRTBindable self) {
+    if (!_drt_wrap_ready())
+        _drt_wrap_init();
+
+    // Can't wrap null.
+    if (from && !_drt_get_wrap_obj(from)) {
+        _drt_bind_wrap_obj(from, self);
+    }
+}
 
 /**
     Gets the wrapper object

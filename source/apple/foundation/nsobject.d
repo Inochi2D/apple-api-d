@@ -54,16 +54,8 @@ interface NSObjectProtocol {
     Base class of all Objective-C classes.
 */
 @ObjectiveC
-class NSObject : NSObjectProtocol, DRTBindable {
+class NSObject : DRTBindable, NSObjectProtocol {
 @nogc nothrow:
-private:
-    id self_;
-
-    /**
-        Decrements the receiver’s reference count.
-    */
-    void objc_dealloc() @selector("dealloc");
-
 protected:
 
     /**
@@ -76,71 +68,14 @@ protected:
         Calls base init function.
     */
     final
-    id init() => this.message!id(this.objc_type(), "init");
-
-    /**
-        Allows updating self value.
-    */
-    @objc_ignore
-    @property id self(id newValue) { this.self_ = newValue; return self_; }
+    id init() => this.message!id(this.self(), "init");
 
 public:
 
     /**
-        Gets the underlying Objective-C type
-        Either a Class or Protocol.
-    */
-    final
-    @objc_ignore
-    @property id objc_type() inout => cast(id)SELF_TYPE;
-
-    /**
-        Gets the underlying Objective-C reference.
-    */
-    @objc_ignore
-    @property id self() inout => cast(id)self_;
-
-    /**
-        Destructor of all NSObject-derived instances
-    */
-    ~this() {
-        if (self_) {
-            drt_wrap_remove(self_);
-            this.release();
-            this.self_ = null;
-        }
-    }
-
-    /**
         Base constructor
     */
-    this(id self) { this.self_ = self; }
-
-    /**
-        Called when the DRT type is being wrapped.
-    */
-    void notifyWrap(id byWhom) { }
-
-    /**
-        Called when the DRT type is being unwrapped.
-    */
-    void notifyUnwrap(id byWhom) { }
-
-    /**
-        Called when the DRT type is being destroyed.
-    */
-    void notifyDealloc(id byWhom) { 
-        this.self_ = null;
-
-        // This won't free other instances!
-        NSObject self = this;
-        nogc_delete(self);
-    }
-
-    /**
-        Gets the handle of the association for this objective-c class.
-    */
-    final id drt_handle() => drt_get_handle(self_);
+    this(id self) { super(self); }
     
     /**
         Gets whether this object conforms to the specified prototype.

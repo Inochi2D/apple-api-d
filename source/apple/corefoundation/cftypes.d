@@ -14,14 +14,15 @@ import apple.os;
 extern(C) @nogc nothrow:
 
 /**
-    Underlying opaque type for CFString
+    An untyped "generic" reference to any Core Foundation object.
 */
-struct __CFString;
+struct CFTypeRef {
+nothrow @nogc:
+    void* isa;
+    alias isa this;
 
-/**
-    Underlying opaque type for CFNull
-*/
-struct __CFNull;
+    this(void* ptr) { this.isa = ptr; }
+}
 
 /**
     A type for unique, constant integer values that identify particular Core Foundation opaque types.
@@ -49,31 +50,11 @@ alias CFIndex = Int;
 alias CFTimeInterval = double;
 
 /**
-    An untyped "generic" reference to any Core Foundation object.
-*/
-alias CFTypeRef = void*;
-
-/**
-    An Immutable CoreFoundation String
-*/
-alias CFStringRef = const(__CFString)*;
-
-/**
-    A Mutable CoreFoundation String
-*/
-alias CFMutableStringRef = __CFString*;
-
-/**
     Type to mean any instance of a property list type;
     currently, CFString, CFData, CFNumber, CFBoolean, CFDate,
     CFArray, and CFDictionary.
 */
 alias CFPropertyListRef = CFTypeRef;
-
-/**
-    CoreFoundation "null" type.
-*/
-alias CFNullRef = const(__CFNull)*;
 
 /**
     Result of a comparison.

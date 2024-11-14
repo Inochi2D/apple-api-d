@@ -65,5 +65,5 @@ public:
     MTLTexture newTexture(MTLTextureDescriptor descriptor, NSUInteger offset, NSUInteger bytesPerRow) @selector("newTextureWithDescriptor:offset:bytesPerRow:");
 
     // Link
-    mixin ObjcLink!("_MTLBuffer");
+    mixin ObjcLink!("MTLBuffer");
 }

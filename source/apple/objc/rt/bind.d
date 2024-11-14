@@ -44,19 +44,21 @@ mixin template ObjcLink(string name=null) {
 
         static if (hasUDA!(Self, ObjcProtocol)) {
 
-            // Create C const object.
-            pragma(mangle, objc_classVarName!(SelfLinkName))
-            mixin(q{extern(C) extern __gshared objc_protocol }, "Objc_Proto_", SelfLinkName, ";");
+            @objc_ignore
+            static id SELF_TYPE() => cast(id)objc_getProtocol(SelfLinkName);
 
-            mixin(q{static Protocol SELF_TYPE = &}, "Objc_Proto_", SelfLinkName, ";");
+            override
+            @objc_ignore
+            @property id objc_type() inout => cast(id)objc_getProtocol(SelfLinkName);
 
         } else {
 
-            // Create C const object.
-            pragma(mangle, objc_classVarName!(SelfLinkName))
-            mixin(q{extern(C) extern __gshared objc_class }, "Objc_Class_", SelfLinkName, ";");
+            @objc_ignore
+            static id SELF_TYPE() => cast(id)objc_lookUpClass(SelfLinkName);
 
-            mixin(q{static Class SELF_TYPE = &}, "Objc_Class_", SelfLinkName, ";");
+            override
+            @objc_ignore
+            @property id objc_type() inout => cast(id)objc_lookUpClass(SelfLinkName);
         }
 
         mixin ObjcLinkObject!Self;
@@ -126,7 +128,6 @@ enum ObjcMethodCanGenerate(alias DObjectMember) =
     __traits(identifier, DObjectMember) != "__ctor" &&
     __traits(identifier, DObjectMember) != "__dtor" && (
         hasUDA!(DObjectMember, selector) ||
-        __traits(isStaticFunction, DObjectMember) ||
         hasFunctionAttributes!(DObjectMember, "@property")
     );
 

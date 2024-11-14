@@ -20,7 +20,7 @@ mixin RequireAPIs!(Foundation);
 /**
     NSArray
 */
-@ObjectiveC
+@ObjectiveC @TollFreeBridged!CFArrayRef
 class NSArray : NSObject {
 @nogc nothrow:
 public:
@@ -48,14 +48,6 @@ public:
     this(NSArray toCopy) {
         super(this.message!id(this.objc_type(), "arrayWithArray:", toCopy));
     }
-    
-    /**
-        Create from CoreFoundation array.
-    */
-    version(CoreFoundation) 
-    this(CFArrayRef arr) {
-        super(cast(id)arr);
-    }
 
     /**
         Returns a Boolean value that indicates whether a given object is present in the array.
@@ -67,13 +59,24 @@ public:
     */
     id objectAtIndex(NSUInteger index) @selector("objectAtIndex:");
 
-    /**
-        Casts NSArray to CFArrayRef
-    */
-    version(CoreFoundation)
-    CFArrayRef toCFArray() => cast(CFArrayRef)this.self();
-
     // Link NSArray.
+    mixin ObjcLink;
+}
+
+/**
+    A Mutable NSArray
+*/
+@ObjectiveC @TollFreeBridged!CFMutableArrayRef
+class NSMutableArray : NSArray {
+@nogc nothrow:
+public:
+
+    /**
+        Base constructor
+    */
+    this(id self) { super(self); }
+
+    // Link NSMutableString.
     mixin ObjcLink;
 }
 

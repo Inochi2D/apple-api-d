@@ -9,25 +9,33 @@
     CFDictionary
 */
 module apple.corefoundation.cfdictionary;
-import apple.corefoundation.cfallocator;
-import apple.corefoundation.cfbase;
+import apple.corefoundation;
+import apple.foundation;
 import apple;
 import apple.os;
 
 mixin RequireAPIs!(CoreFoundation);
 extern(C) @nogc nothrow:
 
-struct __CFDictionary;
-
 /**
     Handle to a CoreFoundation Dictionary
 */
-alias CFDictionaryRef = const(__CFDictionary)*;
+struct CFDictionaryRef {
+    version(Foundation) @TollFreeBridged!NSDictionary CFTypeRef isa;
+    else CFTypeRef isa;
+
+    alias isa this;
+}
 
 /**
     Handle to a mutable CoreFoundation Dictionary
 */
-alias CFMutableDictionaryRef = __CFDictionary*;
+struct CFMutableDictionaryRef {
+    version(Foundation) @TollFreeBridged!NSMutableDictionary CFTypeRef isa;
+    else CFTypeRef isa;
+
+    alias isa this;
+}
 
 alias CFDictionaryRetainCallBack = const(void)*	function(CFAllocatorRef allocator, const(void)* value);
 alias CFDictionaryReleaseCallBack = void function(CFAllocatorRef allocator, const(void)* value);

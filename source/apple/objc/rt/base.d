@@ -519,3 +519,8 @@ extern bool sel_isEqual(SEL lhs, SEL rhs);
     Creates a pointer to a function that calls the specified block when the method is called.
 */
 IMP imp_implementationWithBlock(id block);
+
+/**
+    Returns the specified protocol. 
+*/
+Protocol objc_getProtocol(const(char)*);
