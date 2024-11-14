@@ -554,6 +554,11 @@ public:
     */
     bool supportsVertexAmplificationCount(NSUInteger count) const @selector("supportsVertexAmplificationCount:");
 
+    /**
+        The largest amount of memory, in bytes, that a GPU device can allocate to a buffer instance.
+    */
+    @property NSUInteger maxBufferLength() const;
+
 
     /**
         Creates the system default device.
@@ -584,6 +589,48 @@ public:
         Creates a queue you use to submit rendering and computation commands to a GPU.
     */
     MTLCommandQueue newCommandQueue(NSUInteger maxCommandBufferCount) @selector("newCommandQueueWithMaxCommandBufferCount:");
+
+    /**
+        Creates a buffer the method clears with zero values.
+    */
+    MTLBuffer newBuffer(NSUInteger length, MTLResourceOptions options) @selector("newBufferWithLength:options:");
+
+    /**
+        Allocates a new buffer of a given length and initializes 
+        its contents by copying existing data into it.
+    */
+    MTLBuffer newBuffer(void* data, NSUInteger length, MTLResourceOptions options) @selector("newBufferWithBytes:length:options:");
+
+    /**
+        Creates a new texture instance.
+    */
+    MTLTexture newTexture(MTLTextureDescriptor descriptor) @selector("newTextureWithDescriptor:");
+
+    /**
+        Creates a texture instance that uses an IOSurface to store its underlying data.
+    */
+    version(IOSurface)
+    MTLTexture newTexture(MTLTextureDescriptor descriptor, IOSurfaceRef surface, NSUInteger plane) @selector("newTextureWithDescriptor:iosurface:plane:");
+
+    /**
+        Creates a texture that you can share across process boundaries.
+    */
+    MTLTexture newSharedTexture(MTLTextureDescriptor descriptor) @selector("newSharedTextureWithDescriptor:");
+
+    /**
+        Creates a texture that references a shared texture.
+    */
+    MTLTexture newSharedTexture(MTLSharedTextureHandle descriptor) @selector("newSharedTextureWithHandle:");
+
+    /**
+        Returns the minimum alignment the GPU device requires to create a linear texture from a buffer.
+    */
+    NSUInteger minimumLinearTextureAlignmentForPixelFormat(MTLPixelFormat format) @selector("minimumLinearTextureAlignmentForPixelFormat:");
+
+    /**
+        Returns the minimum alignment the GPU device requires to create a texture buffer from a buffer.
+    */
+    NSUInteger minimumTextureBufferAlignmentForPixelFormat(MTLPixelFormat format) @selector("minimumTextureBufferAlignmentForPixelFormat:");
 
     /// Link MTLDevice.
     mixin ObjcLink!("_MTLDevice");

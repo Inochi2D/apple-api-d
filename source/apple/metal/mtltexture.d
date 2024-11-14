@@ -207,7 +207,7 @@ public:
     To copy pixel data back to system memory, call one of the [MTLTexture.getBytes] methods.
 */
 @ObjectiveC
-class MTLTexture : NSObject {
+class MTLTexture : MTLResource {
 @nogc nothrow:
 public:
 
@@ -326,4 +326,39 @@ public:
 
     // Link MTLTexture.
     mixin ObjcLink!("MTLTextureReferenceType");
+}
+
+/**
+    A texture handle that can be shared across process address space boundaries.
+
+    MTLSharedTextureHandle objects may be passed between processes using 
+    XPC connections and then used to create a reference to the texture in another process. 
+
+    The texture in the other process must be created using the same MTLDevice on which the 
+    shared texture was originally created. To identify which device it was created on, you can use 
+    the device property of the MTLSharedTextureHandle object.
+*/
+@ObjectiveC
+class MTLSharedTextureHandle : NSObject {
+@nogc nothrow:
+public:
+
+    /**
+        The device object that created the texture.
+    */
+    @property MTLDevice device() const;
+
+    /**
+        A string that identifies the texture.
+    */
+    @property NSString label() const;
+
+    /**
+        Base constructor
+    */
+    this(id self) { super(self); }
+
+
+    // Link MTLSharedTextureHandle.
+    mixin ObjcLink;
 }

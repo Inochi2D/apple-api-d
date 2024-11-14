@@ -29,3 +29,4 @@ public import apple.metal.mtltypes;
 public import apple.metal.mtldevice;
 public import apple.metal.mtltexture;
 public import apple.metal.mtlbuffer;
+public import apple.metal.mtlresource;
