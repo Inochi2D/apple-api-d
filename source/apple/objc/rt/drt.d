@@ -104,6 +104,18 @@ public:
     }
 
     /**
+        Retain
+    */
+    @objc_ignore
+    abstract void retain();
+
+    /**
+        Release
+    */
+    @objc_ignore
+    abstract void release();
+
+    /**
         Sends a message (calls a function) based on the given selector.
     */
     @objc_ignore
@@ -132,6 +144,35 @@ public:
     @objc_ignore
     static T wrap(T)(id self) {
         return drt_wrap!T(self);
+    }
+}
+
+/**
+    A struct which wraps an DRTBindable type and calls the
+    retain and release functions automatically.
+*/
+struct DRTAutoRelease {
+nothrow @nogc:
+private:
+    size_t depth;
+public:
+    import core.stdc.stdio : printf;
+
+    DRTBindable bindable;
+    alias bindable this;
+
+    ~this() {
+        bindable.release();
+    }
+
+    this(this) {
+        bindable.retain();
+        this.depth++;
+    }
+
+    this(DRTBindable bindable) {
+        this.bindable = bindable;
+        this.depth = 0;
     }
 }
 

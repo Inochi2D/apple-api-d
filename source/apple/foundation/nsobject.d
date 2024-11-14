@@ -91,6 +91,14 @@ public:
         return this.isEqual(other.self_);
     }
 
+    /**
+        Creates a stack allocated wrapper for the object
+        that gets released when it goes out of scope.
+    */
+    auto autorelease() {
+        return DRTAutoRelease(this);
+    }
+
     // Link NSObject.
     mixin ObjcLink;
 }
