@@ -30,3 +30,7 @@ public import apple.metal.mtldevice;
 public import apple.metal.mtltexture;
 public import apple.metal.mtlbuffer;
 public import apple.metal.mtlresource;
+public import apple.metal.mtlfence;
+public import apple.metal.mtlcommandbuffer;
+public import apple.metal.mtlcommandencoder;
+public import apple.metal.mtlcommandqueue;

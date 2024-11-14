@@ -19,8 +19,7 @@ import apple.os;
 import apple.iosurface;
 
 import apple.objc;
-import apple.objc.rt;
-import apple.objc.rt : selector;
+import apple.objc : selector;
 
 mixin RequireAPIs!(Metal, Foundation);
 
