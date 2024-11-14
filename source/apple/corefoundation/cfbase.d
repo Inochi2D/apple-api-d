@@ -21,17 +21,20 @@ enum CoreFoundation;
 mixin RequireAPIs!(CoreFoundation);
 mixin LinkFramework!("CoreFoundation");
 
-extern(C) @nogc nothrow:
+// Import if we're linking to CoreFoundation.
+public import apple.corefoundation.cftypes;
 
-/**
-    Underlying opaque type for CFString
-*/
-struct __CFString;
+extern(C) @nogc nothrow:
 
 /**
     The current version of the Core Foundation framework
 */
-extern(C) extern __gshared double kCFCoreFoundationVersionNumber;
+__gshared double kCFCoreFoundationVersionNumber;
+
+/**
+    A CFNullRef singleton instance.
+*/
+extern const __gshared CFNullRef kCFNull;
 
 enum kCFCoreFoundationVersionNumber10_0     = 196.4;
 enum kCFCoreFoundationVersionNumber10_0_3   = 196.5;
@@ -41,101 +44,11 @@ enum kCFCoreFoundationVersionNumber10_1_4   = 227.3;
 enum kCFCoreFoundationVersionNumber10_2     = 263.0;
 
 /**
-    A type for unique, constant integer values that identify particular Core Foundation opaque types.
-*/
-alias CFTypeID = UInt;
-
-/**
-    CFOptionFlags
-*/
-alias CFOptionFlags = UInt;
-
-/**
-    A type for hash codes returned by the CFHash function.
-*/
-alias CFHashCode = UInt;
-
-/**
-    Priority values used for kAXPriorityKey
-*/
-alias CFIndex = Int;
-
-/**
-    An untyped "generic" reference to any Core Foundation object.
-*/
-alias CFTypeRef = void*;
-
-/**
-    An Immutable CoreFoundation String
-*/
-alias CFStringRef = const(__CFString)*;
-
-/**
-    A Mutable CoreFoundation String
-*/
-alias CFMutableStringRef = __CFString*;
-
-/**
-    Type to mean any instance of a property list type;
-    currently, CFString, CFData, CFNumber, CFBoolean, CFDate,
-    CFArray, and CFDictionary.
-*/
-alias CFPropertyListRef = CFTypeRef;
-
-/**
-    Result of a comparison.
-*/
-enum CFComparisonResult : CFIndex {
-    lessThan = -1,
-    equalTo = 0,
-    greaterThan = 1
-}
-
-/**
     Callback function that compares two values. 
     You provide a pointer to this callback in certain Core Foundation sorting functions.
 */
 alias CFComparatorFunction = extern(C) CFComparisonResult function(const(void)* val1, const(void)* val2, void* context);
 
-/**
-    Constant used by some functions to indicate failed searches.
-*/
-enum CFIndex kCFNotFound = -1;
-
-/**
-    A structure representing a range of sequential items in a container, 
-    such as characters in a buffer or elements in a collection.
-*/
-struct CFRange {
-    /**
-        An integer representing the number of items in the range.
-    
-        For type compatibility with the rest of the system, [CFIndex.max] is the maximum value you should use for length.
-    */
-    CFIndex length;
-
-    /**
-        An integer representing the starting location of the range.
-    
-        For type compatibility with the rest of the system, [CFIndex.max] is the maximum value you should use for location.
-    */
-    CFIndex location;
-}
-
-/**
-    Underlying opaque type handle for the CoreFoundation "null" type.
-*/
-struct __CFNull;
-
-/**
-    CoreFoundation "null" type.
-*/
-alias CFNullRef = const(__CFNull)*;
-
-/**
-    A CFNullRef singleton instance.
-*/
-extern(C) extern const __gshared CFNullRef kCFNull;
 
 /**
     Gets the Type ID of the CoreFundation Null type.

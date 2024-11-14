@@ -16,3 +16,4 @@ public import apple.corefoundation.cfdictionary;
 public import apple.corefoundation.cfstring;
 public import apple.corefoundation.cfarray;
 public import apple.corefoundation.cfallocator;
+public import apple.corefoundation.cftypes;

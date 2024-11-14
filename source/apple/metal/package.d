@@ -34,3 +34,5 @@ public import apple.metal.mtlfence;
 public import apple.metal.mtlcommandbuffer;
 public import apple.metal.mtlcommandencoder;
 public import apple.metal.mtlcommandqueue;
+public import apple.metal.mtlrenderpass;
+public import apple.metal.mtlrenderpipeline;
