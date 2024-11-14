@@ -199,6 +199,10 @@ T drt_wrap(T)(id from) if (is(T : DRTBindable)) {
     if (!_drt_wrap_ready())
         _drt_wrap_init();
 
+    // Can't wrap null.
+    if (!from)
+        return null;
+
     // Get the wrapper object
     id wrapper = _drt_get_wrap_obj(from);
     if (wrapper)
