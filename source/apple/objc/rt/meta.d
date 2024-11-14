@@ -9,6 +9,7 @@
     D Runtime Integration for Objective-C
 */
 module apple.objc.rt.meta;
+import apple.objc.rt.drt;
 import apple.os;
 import std.traits;
 import std.meta;
@@ -42,9 +43,7 @@ struct ObjcProtocol;
 //      Argument Handling
 //
 template toObjCArgType(alias arg) {
-    import apple.objc.nsobject;
-
-    static if (is(typeof(arg) : NSObject))
+    static if (is(typeof(arg) : DRTBindable))
         alias toObjCArgType = id;
     else
         alias toObjCArgType = arg;

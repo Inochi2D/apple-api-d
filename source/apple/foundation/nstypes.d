@@ -11,13 +11,17 @@
 module apple.foundation.nstypes;
 import apple.corefoundation;
 import apple.foundation;
-import apple.objc.nsobject;
 import apple.objc.rt;
 import apple.objc.rt : selector;
 import apple.os;
 import comp = std.algorithm.comparison;
 
-mixin RequireAPIs!(Foundation);
+//
+//      Core types
+//
+
+alias NSInteger = ptrdiff_t;
+alias NSUInteger = size_t;
 
 /**
     A structure used to describe a portion of a series, such as characters in a string or objects in an array.

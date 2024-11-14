@@ -20,5 +20,8 @@ mixin RequireAPIs!(ObjC);
 pragma(lib, "objc");
 
 public import apple.objc.block;
-public import apple.objc.nsobject;
 public import apple.objc.rt.bind : ObjcLink;
+public import apple.objc.rt.meta;
+public import apple.objc.rt.base : id, Class, Protocol, SEL;
+
+alias selector = apple.objc.rt.selector;

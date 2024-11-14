@@ -11,7 +11,6 @@
 module apple.foundation.nsvalue;
 import apple.corefoundation;
 import apple.foundation;
-import apple.objc.nsobject;
 import apple.objc.rt;
 import apple.objc.rt : selector;
 import apple.os;

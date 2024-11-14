@@ -11,7 +11,7 @@
 module apple.objc.rt.bind;
 import apple.os;
 
-import apple.objc : ObjC, NSObject;
+import apple.objc : ObjC;
 mixin RequireAPIs!(ObjC);
 
 import apple.objc.rt.base;
@@ -35,14 +35,11 @@ mixin template ObjcLink(string name=null) {
     import apple.objc.rt.bind;
     import apple.objc.rt.abi;
     import apple.objc.rt.drt;
-    import apple.objc.nsobject;
 
     alias Self = typeof(this);
     enum SelfLinkName = name is null ? Self.stringof : name;
 
     static if (is(Self == class)) {
-        
-        /// Catch users trying to create non-NSObject derived 
         static assert(is(Self : DRTBindable), "Objective-C type did not implement DRTBindable!");
 
         static if (hasUDA!(Self, ObjcProtocol)) {

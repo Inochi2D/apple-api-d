@@ -1,11 +1,12 @@
 module apple.mach.ports;
+import apple.os;
+
+static if (AppleOS):
+extern(C):
 
 public import core.sys.darwin.mach.port;
 public import core.sys.darwin.mach.kern_return;
 public import core.sys.darwin.mach.semaphore;
-
-version(AppleOS):
-extern(C):
 
 /// IPC Space
 struct ipc_space;

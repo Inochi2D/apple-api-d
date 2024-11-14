@@ -2,6 +2,8 @@
     Bindings to Apple's Mach API
 */
 module apple.mach;
+import apple.os;
 
-/// Only available on apple OSes.
-version(AppleOS):
+static if (AppleOS):
+
+public import apple.mach.ports;

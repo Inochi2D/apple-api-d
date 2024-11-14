@@ -8,16 +8,16 @@
 /**
     Bindings to NSObject and NSObjectProtocol
 */
-module apple.objc.nsobject;
+module apple.foundation.nsobject;
+import apple.foundation.nstypes;
 import apple.os;
 
 import apple.objc : ObjC;
 mixin RequireAPIs!(ObjC);
 
+import apple.objc;
 import apple.objc.rt;
 import apple.objc.rt : selector;
-import apple.objc.rt.drt;
-
 import numem.core.memory;
 
 @ObjectiveC
@@ -158,13 +158,4 @@ public:
 
     // Link NSObject.
     mixin ObjcLink;
-}
-
-/**
-    Gets a selector by its name.
-
-    Returns null if the selector wasn't found.
-*/
-SEL getSelector(const(char)* selector) {
-    return sel_getUid(selector);
 }

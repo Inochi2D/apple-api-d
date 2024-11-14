@@ -15,13 +15,6 @@ import apple.os;
 import apple.objc : ObjC;
 mixin RequireAPIs!(ObjC);
 
-//
-//      Core types
-//
-
-alias NSInteger = ptrdiff_t;
-alias NSUInteger = size_t;
-
 /**
     Specifies the superclass of an instance.
 

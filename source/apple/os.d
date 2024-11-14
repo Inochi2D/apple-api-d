@@ -67,6 +67,7 @@ alias OSStatus          = UInt32;
 alias UTF32Char         = dchar;
 alias UTF16Char         = wchar;
 alias UTF8Char          = char;
+alias OSType            = uint;
 
 /**
     Mixin template which instructs LDC and other compatible D compilers
