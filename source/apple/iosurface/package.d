@@ -15,6 +15,8 @@ import apple.os;
 import apple;
 import core.sys.darwin.mach.kern_return;
 
+/// Enum used as a version tag.
+enum IOSurface;
 
 mixin RequireAPIs!(IOSurface, CoreFoundation);
 
