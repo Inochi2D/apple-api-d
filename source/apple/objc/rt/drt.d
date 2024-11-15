@@ -49,8 +49,9 @@ protected:
     */
     final
     @objc_ignore
-    void selfwrap() {
-        _drt_wrap_existing(this.self_, this);
+    id wrap(id self_) {
+        _drt_wrap_existing(self_, this);
+        return self_;
     }
 
 public:

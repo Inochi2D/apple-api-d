@@ -10,17 +10,51 @@
 */
 module apple.foundation.nsobject;
 import apple.foundation.nstypes;
+import apple.foundation.nscoder;
+import apple.foundation.nszone;
 import apple.os;
 
 import apple.objc : ObjC;
 mixin RequireAPIs!(ObjC);
 
+import apple.objc.rt.drt;
+
 import apple.objc;
-import apple.objc.rt;
-import apple.objc.rt : selector;
+import apple.objc : selector;
 import numem.core.memory;
 
-@ObjectiveC
+/**
+    A protocol that enables encoding and decoding in a manner 
+    that is robust against object substitution attacks.
+*/
+@ObjectiveC @ObjcProtocol
+interface NSSecureCoding {
+@nogc nothrow:
+public:
+
+    /**
+        A Boolean value that indicates whether or not the class 
+        supports secure coding.
+    */
+    @property bool supportsSecureCoding();
+}
+
+/**
+    A protocol that enables an object to be encoded and 
+    decoded for archiving and distribution.
+*/
+@ObjectiveC @ObjcProtocol
+interface NSCoding {
+@nogc nothrow:
+public:
+    
+    /**
+        Encodes the receiver using a given archiver.
+    */
+    void encodeWithCoder(NSCoder coder) @selector("encodeWithCoder:");
+}
+
+@ObjectiveC @ObjcProtocol
 interface NSObjectProtocol {
 @nogc nothrow:
 
@@ -51,6 +85,34 @@ interface NSObjectProtocol {
 }
 
 /**
+    A protocol that objects adopt to provide functional copies of themselves.
+*/
+@ObjectiveC @ObjcProtocol
+interface NSMutableCopying {
+@nogc nothrow:
+public:
+
+    /**
+        Returns a new instance that’s a copy of the receiver.
+    */
+    id mutableCopyWithZone(NSZone* zone) @selector("mutableCopyWithZone:");
+}
+
+/**
+    A protocol that objects adopt to provide functional copies of themselves.
+*/
+@ObjectiveC @ObjcProtocol
+interface NSCopying {
+@nogc nothrow:
+public:
+
+    /**
+        Returns a new instance that’s a copy of the receiver.
+    */
+    id copyWithZone(NSZone* zone) @selector("copyWithZone:");
+}
+
+/**
     Base class of all Objective-C classes.
 */
 @ObjectiveC
@@ -62,6 +124,11 @@ public:
         Base constructor
     */
     this(id self) { super(self); }
+
+    /**
+        Constructs an object with initial parameters.
+    */
+    this() { super(wrap(this.alloc().initialize())); }
     
     /**
         Gets whether this object conforms to the specified prototype.
@@ -73,7 +140,8 @@ public:
     /**
         Implements equality comparison
     */
-    bool opEquals(T)(T other) @nobind if (is(T : NSObject)) {
+    @objc_ignore
+    bool opEquals(T)(T other) if (is(T : NSObject)) {
         return this.isEqual(other.self_);
     }
 

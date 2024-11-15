@@ -29,12 +29,13 @@ alias selector = apple.objc.rt.meta.selector;
 
     Needs to be mixed-in from within the class or protocol you wish to bind.
 */
-mixin template ObjcLink(string name=null) {
+template ObjcLink(string name=null) {
     import std.traits;
     import apple.objc.rt.base;
     import apple.objc.rt.bind;
     import apple.objc.rt.abi;
     import apple.objc.rt.drt;
+    import std.file;
 
     alias Self = typeof(this);
     enum SelfLinkName = name is null ? Self.stringof : name;
@@ -77,7 +78,7 @@ template SuperClass(T) {
         alias SuperClass = T;
 }
 
-mixin template ObjcLinkObject(DClassObject) {
+template ObjcLinkObject(DClassObject) {
     static foreach(classMember; __traits(derivedMembers, DClassObject)) {
         static if (!isAlias!(DClassObject, classMember)) {
             static foreach(mRef; __traits(getOverloads, DClassObject, classMember)) {
@@ -136,50 +137,52 @@ enum ObjcMethodQualifiers(alias DObjectMember) =
 
 enum ObjcMethodShouldOverride(DObject, alias DObjectMember) =
     __traits(isVirtualMethod, DObjectMember) && 
-    hasMember!(SuperClass!DObject, __traits(identifier, DObjectMember));
+    hasMember!(SuperClass!DObject, __traits(identifier, DObjectMember)) &&
+    __traits(isSame, DObjectMember, __traits(getMember, SuperClass!DObject, __traits(identifier, DObjectMember)));
 
 enum ObjcReturnType(alias DObjectMember) = 
     (ReturnType!DObjectMember).stringof~" ";
 
 /// Link a single member
 template ObjcLinkMember(DObject, alias DObjectMember) {
+    import std.string : format;
 
     // Basic information about the member.
     enum fName = __traits(identifier, DObjectMember);
-    enum fParamList = ObjcParamList!(DObjectMember);
     enum fSelector = ObjcSelectorName!DObjectMember;
-    enum fQualifiers = ObjcMethodQualifiers!DObjectMember;
+    alias fParams = Parameters!DObjectMember;
     alias fReturnType = ReturnType!DObjectMember;
-    enum fReturnTypeName = ObjcReturnType!DObjectMember;
 
     static if (ObjcMethodShouldOverride!(DObject, DObjectMember)) {
 
-        // For when we can override
+        // OVERRIDE
         override
-        mixin(fQualifiers, fReturnTypeName, fName, fParamList, q{{
-            const(char)* sel = fSelector;
-
-            return this.message!fReturnType(sel, __traits(parameters));
-        }});
+        @(__traits(getAttributes, DObjectMember))
+        mixin(q{
+            fReturnType %s(fParams) {
+                return this.message!fReturnType("%s", __traits(parameters));
+            }
+        }.format(fName, fSelector));
     } else static if (__traits(isStaticFunction, DObjectMember)) {
         
-        // Static functions
+        // STATIC
+        @(__traits(getAttributes, DObjectMember))
         pragma(mangle, DObjectMember.mangleof)
-        mixin(fQualifiers, fReturnTypeName, fName, fParamList, q{{
-            const(char)* sel = fSelector;
-
-            return DObject.message!fReturnType(cast(id)DObject.SELF_TYPE, sel, __traits(parameters));
-        }});
+        mixin(q{
+            fReturnType %s(fParams) {
+                return DObject.message!fReturnType(cast(id)DObject.SELF_TYPE, "%s", __traits(parameters));
+            }
+        }.format(fName, fSelector));
     } else {
-
-        // And finally, the option where we just forcefully put in 
-        // a mangled replacement.
+        
+        // OTHER
+        @(__traits(getAttributes, DObjectMember))
         pragma(mangle, DObjectMember.mangleof)
-        mixin(fQualifiers, fReturnTypeName, fName, fParamList, q{{
-            const(char)* sel = fSelector;
-
-            return this.message!fReturnType(sel, __traits(parameters));
-        }});
+        mixin(q{
+            fReturnType %s(fParams) {
+                return this.message!fReturnType("%s", __traits(parameters));
+            }
+        }.format(fName, fSelector));
     }
 }
 
@@ -189,5 +192,5 @@ template ObjcLinkMember(DObject, alias DObjectMember) {
 template toObjcSetterSEL(string name) {
     import std.ascii;
     import std.string : toStringz;
-    enum const(char)* toObjcSetterSEL = ("set"~name[0].toUpper()~name[1..$]~":\0").ptr;
+    enum toObjcSetterSEL = ("set"~name[0].toUpper()~name[1..$]~":");
 }

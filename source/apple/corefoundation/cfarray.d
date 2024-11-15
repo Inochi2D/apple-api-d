@@ -21,9 +21,7 @@ extern(C) @nogc nothrow:
     Handle to an immutable CFArray
 */
 struct CFArrayRef {
-    version(Foundation) @TollFreeBridged!NSArray CFTypeRef isa;
-    else CFTypeRef isa;
-
+    CFTypeRef isa;
     alias isa this;
 }
 
@@ -31,9 +29,7 @@ struct CFArrayRef {
     Handle to a mutable CFArray
 */
 struct CFMutableArrayRef {
-    version(Foundation) @TollFreeBridged!NSMutableArray CFTypeRef isa;
-    else CFTypeRef isa;
-
+    CFTypeRef isa;
     alias isa this;
 }
 

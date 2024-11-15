@@ -9,7 +9,7 @@
     Bindings to Apple's CoreGraphics API.
 */
 module apple.coregraphics;
-import apple.foundation;
+import apple.corefoundation;
 import apple.coredata;
 import apple.objc;
 import apple.os;
@@ -17,7 +17,9 @@ import apple.os;
 /// Enum used as a version tag.
 enum CoreGraphics;
 
-mixin RequireAPIs!(CoreGraphics, ObjC, CoreData, Foundation);
+mixin RequireAPIs!(CoreGraphics, CoreFoundation);
 
 /// Link to CoreData (on apple platforms)
 mixin LinkFramework!("CoreGraphics");
+
+public import apple.coregraphics.cggeometry;

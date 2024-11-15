@@ -21,9 +21,7 @@ extern(C) @nogc nothrow:
     Handle to a CoreFoundation Dictionary
 */
 struct CFDictionaryRef {
-    version(Foundation) @TollFreeBridged!NSDictionary CFTypeRef isa;
-    else CFTypeRef isa;
-
+    CFTypeRef isa;
     alias isa this;
 }
 
@@ -31,9 +29,7 @@ struct CFDictionaryRef {
     Handle to a mutable CoreFoundation Dictionary
 */
 struct CFMutableDictionaryRef {
-    version(Foundation) @TollFreeBridged!NSMutableDictionary CFTypeRef isa;
-    else CFTypeRef isa;
-
+    CFTypeRef isa;
     alias isa this;
 }
 

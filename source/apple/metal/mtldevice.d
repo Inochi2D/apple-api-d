@@ -587,8 +587,8 @@ public:
         Returns an NSArray over all the MTLDevice instances
         in the system.
     */
-    static NSArrayT!MTLDevice allDevices() @objc_ignore {
-        return wrap!(NSArrayT!MTLDevice)(MTLCopyAllDevices());
+    static NSArray!MTLDevice allDevices() @objc_ignore {
+        return wrap!(NSArray!MTLDevice)(MTLCopyAllDevices());
     }
 
     /**
@@ -662,7 +662,7 @@ public:
     MTLLibrary newLibrary(NSString source, MTLCompileOptions options, ref NSError error) @selector("newLibraryWithSource:options:error:") {
         MTLLibrary library;
         id err;
-        
+
         library = this.message!MTLLibrary(this.self(), "newLibraryWithSource:options:error:", source.self(), options.self(), &err);
         error = NSError.wrap!NSError(err);
         return library;

@@ -227,6 +227,11 @@ public:
     */
     this(id self) { super(self); }
 
+    /**
+        Constructs a new MTLRenderPassAttachmentDescriptor
+    */
+    this() { super(); }
+
 
     // Link
     mixin ObjcLink!("MTLRenderPassAttachmentDescriptor");
@@ -253,12 +258,9 @@ public:
     this(id self) { super(self); }
 
     /**
-        Constructs a new MTLRenderPassDepthAttachmentDescriptor
+        Constructs a new MTLRenderPassColorAttachmentDescriptor
     */
-    this() { 
-        super(this.alloc().initialize());
-        this.selfwrap();
-    }
+    this() { super(); }
 
 
     // Link
@@ -322,10 +324,7 @@ public:
     /**
         Constructs a new MTLRenderPassDepthAttachmentDescriptor
     */
-    this() { 
-        super(this.alloc().initialize());
-        this.selfwrap();
-    }
+    this() { super(); }
 
 
     // Link
@@ -383,10 +382,7 @@ public:
     /**
         Constructs a new MTLRenderPassStencilAttachmentDescriptor
     */
-    this() { 
-        super(this.alloc().initialize());
-        this.selfwrap();
-    }
+    this() { super(); }
 
 
     // Link
@@ -405,14 +401,6 @@ public:
         Base constructor
     */
     this(id self) { super(self); }
-
-    /**
-        Constructs a new MTLRenderPassColorAttachmentDescriptorArray
-    */
-    this() { 
-        super(this.alloc().initialize());
-        this.selfwrap();
-    }
 
     /**
         Gets the MTLRenderPassColorAttachmentDescriptor at the specified index.

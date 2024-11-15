@@ -310,17 +310,17 @@ public:
     /**
         An array that describes the vertex input attributes to a vertex function.
     */
-    @property NSArrayT!MTLVertexAttribute vertexAttributes() const;
+    @property NSArray!MTLVertexAttribute vertexAttributes() const;
 
     /**
         An array that describes the input attributes to the function. 
     */
-    @property NSArrayT!MTLAttribute stageInputAttributes() const;
+    @property NSArray!MTLAttribute stageInputAttributes() const;
 
     /**
         A dictionary of function constants for a specialized function. 
     */
-    @property NSDictionary functionConstantsDictionary() const;
+    @property NSDictionary!(NSString, MTLFunctionConstant) functionConstantsDictionary() const;
 
     /**
         The options that Metal used to compile this function.
@@ -347,8 +347,8 @@ public:
     /**
         A list of preprocessor macros to apply when compiling the library source.
     */
-    @property NSDictionary preprocessorMacros() const;
-    @property void preprocessorMacros(NSDictionary preprocessorMacros);
+    @property NSDictionary!(NSString, NSObject) preprocessorMacros() const;
+    @property void preprocessorMacros(NSDictionary!(NSString, NSObject) preprocessorMacros);
 
     /**
         An indication of whether the compiler can perform optimizations for 
@@ -384,8 +384,8 @@ public:
     /**
         An array of dynamic libraries the Metal compiler links against.
     */
-    @property NSArray libraries() const;
-    @property void libraries(NSArray libraries);
+    @property NSArray!MTLDynamicLibrary libraries() const;
+    @property void libraries(NSArray!MTLDynamicLibrary libraries);
 
     /**
         A Boolean value that indicates whether the compiler compiles vertex shaders 
@@ -468,7 +468,7 @@ public:
     /**
         The names of all public functions in the library.
     */
-    @property NSArrayT!NSString functionNames() const;
+    @property NSArray!NSString functionNames() const;
 
     /**
         Base constructor
@@ -481,5 +481,38 @@ public:
     MTLFunction newFunction(NSString name) @selector("newFunctionWithName:");
 
     // Link MTLLibrary.
+    mixin ObjcLink;
+}
+
+/**
+    A collection of Metal shader functions.
+*/
+@ObjectiveC @ObjcProtocol
+class MTLDynamicLibrary : NSObject {
+nothrow @nogc:
+public:
+    
+    /**
+        A string that identifies the library.
+    */
+    @property NSString label();
+    @property void label(NSString);
+
+    /**
+        The Metal device object that created the library.
+    */
+    @property MTLDevice device() const;
+    
+    /**
+        The installation name for a dynamic library.
+    */
+    @property NSString installName() const;
+
+    /**
+        Base constructor
+    */
+    this(id self) { super(self); }
+
+    // Link MTLDynamicLibrary.
     mixin ObjcLink;
 }

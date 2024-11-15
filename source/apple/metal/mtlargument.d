@@ -389,7 +389,7 @@ public:
     /**
         An array of objects that describe the fields in the struct.
     */
-    @property NSArrayT!MTLStructMember members() const;
+    @property NSArray!MTLStructMember members() const;
 
     /**
         The data type of the struct member.

@@ -161,10 +161,7 @@ public:
     /**
         Constructs a new empty Texture Descriptor
     */
-    this() { 
-        super(this.alloc().initialize());
-        this.selfwrap();
-    }
+    this() { super(); }
 
     // Link MTLTextureDescriptor.
     mixin ObjcLink;

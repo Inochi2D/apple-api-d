@@ -22,7 +22,6 @@ extern(C) @nogc nothrow:
 */
 struct CFNullRef {
     CFTypeRef isa;
-    
     alias isa this;
 }
 

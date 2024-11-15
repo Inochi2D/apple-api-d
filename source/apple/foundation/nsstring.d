@@ -17,18 +17,11 @@ import apple.os;
 
 mixin RequireAPIs!(Foundation, CoreFoundation, ObjC);
 
-// NSString init funcs
-private nothrow @nogc {
-    id initWithUTF8String(id self_, const(char)* str) {
-        return NSObject.message!id(self_, "initWithUTF8String:", str);
-    }
-}
-
 /**
     NSString
 */
 @ObjectiveC @TollFreeBridged!CFStringRef
-class NSString : NSObject {
+class NSString : NSObject, NSCopying, NSMutableCopying, NSSecureCoding {
 @nogc nothrow:
 public:
 
@@ -50,10 +43,7 @@ public:
     /**
         Construct with UTF8 string.
     */
-    this(const(char)* str) {
-        super(this.alloc().initWithUTF8String(str));
-        this.selfwrap();
-    }
+    this(const(char)* str) { super(wrap(this.alloc().send!id("initWithUTF8String:", str))); }
 
     /**
         Implements toString for NSString.
@@ -78,9 +68,24 @@ public:
     /**
         Construct with UTF8 string.
     */
-    this(const(char)* str) {
-        super(this.alloc().initWithUTF8String(str));
-        this.selfwrap();
+    this(const(char)* str) { super(str); }
+
+    /**
+        Appends the given string to this string.
+    */
+    void append(NSString other) @selector("appendString:");
+
+    /**
+        Inserts a string into this string at the specified index.
+    */
+    void insert(NSString other, NSUInteger index) @selector("insertString:atIndex:");
+
+    /**
+        Replaces the characters of the string with those in a given string.
+    */
+    auto opAssign(NSString toSet) {
+        this.message!void("setString:", toSet);
+        return this;
     }
 
     // Link NSMutableString.

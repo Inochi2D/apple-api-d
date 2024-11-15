@@ -21,9 +21,7 @@ extern(C) @nogc nothrow:
     An Immutable CoreFoundation String
 */
 struct CFStringRef {
-    version(Foundation) @TollFreeBridged!NSString CFTypeRef isa;
-    else CFTypeRef isa;
-
+    CFTypeRef isa;
     alias isa this;
 }
 
@@ -31,9 +29,7 @@ struct CFStringRef {
     A Mutable CoreFoundation String
 */
 struct CFMutableStringRef {
-    version(Foundation) @TollFreeBridged!NSMutableString CFTypeRef isa;
-    else CFTypeRef isa;
-    
+    CFTypeRef isa;
     alias isa this;
 }
 

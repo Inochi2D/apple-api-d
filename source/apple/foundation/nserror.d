@@ -28,12 +28,6 @@ alias NSErrorDomain = NSString;
 */
 alias NSErrorUserInfoKey = NSString;
 
-private {
-    id initWithDomain(NSErrorDomain domain, NSInteger code, NSDictionary dict) nothrow @nogc {
-        return NSError.message!id(NSError.SELF_TYPE, "errorWithDomain:code:userInfo:", domain, code, dict);
-    }
-}
-
 /**
     Information about an error condition including a domain, a domain-specific 
     error code, and application-specific information.
@@ -56,7 +50,7 @@ public:
     /**
         The user info dictionary. 
     */
-    @property NSDictionary code() const;
+    @property NSDictionary!(NSErrorUserInfoKey, id) userInfo() const;
 
     /**
         Base constructor
@@ -67,9 +61,8 @@ public:
         Constructs an NSError object initialized for a given domain 
         and code with a given userInfo dictionary. 
     */
-    this(NSErrorDomain domain, NSInteger code, NSDictionary dict) { 
-        super(initWithDomain(domain, code, dict));
-        this.selfwrap();
+    this(NSErrorDomain domain, NSInteger code, NSDictionary!(NSErrorUserInfoKey, id) dict) { 
+        super(wrap(this.alloc().send!id("initWithDomain:code:userInfo:", domain, code, dict)));
     }
 
     // Link NSError.

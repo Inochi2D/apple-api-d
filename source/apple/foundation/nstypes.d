@@ -94,4 +94,4 @@ alias NSRangePointer = NSRange*;
 /**
     A value indicating that a requested item couldn’t be found or doesn’t exist.
 */
-extern(C) extern const NSInteger NSNotFound; // @suppress(dscanner.style.phobos_naming_convention)
+enum NSInteger NSNotFound = NSInteger.max; // @suppress(dscanner.style.phobos_naming_convention)

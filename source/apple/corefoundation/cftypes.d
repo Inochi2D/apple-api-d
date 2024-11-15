@@ -20,8 +20,6 @@ struct CFTypeRef {
 nothrow @nogc:
     void* isa;
     alias isa this;
-
-    this(void* ptr) { this.isa = ptr; }
 }
 
 /**

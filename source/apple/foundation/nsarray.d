@@ -17,101 +17,76 @@ import apple.os;
 
 mixin RequireAPIs!(Foundation);
 
+private alias iter_func(T) = int delegate(T);
+private alias iter_i_func(T) = int delegate(size_t, T);
+
 /**
-    NSArray
+    A static ordered collection of objects.
 */
 @ObjectiveC @TollFreeBridged!CFArrayRef
-class NSArray : NSObject {
+class NSArray(T) : NSObject if(is(T : DRTBindable) || is(T : id)) {
+private:
 @nogc nothrow:
 public:
 
     /**
         The number of objects in the array.
     */
-    @property NSUInteger count();
+    @property NSUInteger count() const;
+
+    /**
+        Gets the first element
+    */
+    @property T front() const @selector("firstObject");
+
+    /**
+        Gets the last element
+    */
+    @property T back() const @selector("lastObject");
 
     /**
         Creates an empty NSArray
     */
-    this() {
-        super(this.message!id(this.objc_type(), "array"));
-    }
-
-    /**
-        Binds an NSArray from its low level implementation
-    */
-    this(id ref_) { super(ref_); }
-
-    /**
-        Creates an array which is a copy of another array.
-    */
-    this(NSArray toCopy) {
-        super(this.message!id(this.objc_type(), "arrayWithArray:", toCopy));
-    }
-
-    /**
-        Returns a Boolean value that indicates whether a given object is present in the array.
-    */
-    bool contains(NSObject obj) @selector("containsObject:");
-
-    /**
-        Returns the object located at the specified index.
-    */
-    id objectAtIndex(NSUInteger index) @selector("objectAtIndex:");
-
-    // Link NSArray.
-    mixin ObjcLink;
-}
-
-/**
-    A Mutable NSArray
-*/
-@ObjectiveC @TollFreeBridged!CFMutableArrayRef
-class NSMutableArray : NSArray {
-@nogc nothrow:
-public:
+    this() { super(wrap(this.alloc().send!id("init"))); }
 
     /**
         Base constructor
     */
     this(id self) { super(self); }
 
-    // Link NSMutableString.
-    mixin ObjcLink;
-}
-
-/**
-    Typed wrapper over NSArray
-*/
-class NSArrayT(T = NSObject) : NSArray {
-private:
-    alias dg_type = int delegate(T);
-    alias dgi_type = int delegate(size_t, T);
-
-@nogc nothrow:
-public:
-
-
-    /// Creates new empty array
-    this() { super(); }
-
-    /// Creates array from ref
-    this(id ref_) { super(ref_); }
+    /**
+        Returns a Boolean value that indicates whether a given object is present in the array.
+    */
+    bool contains(T obj) @selector("containsObject:");
 
     /**
-        Gets object at specified index
+        Returns the object located at the specified index.
     */
+    @objc_ignore
     T opIndex(NSUInteger index) {
-        return wrap!T(this.objectAtIndex(index));
+        return this.message!T("objectAtIndex:", index);
+    }
+
+    /**
+        Returns the lowest index whose corresponding array 
+        value is equal to a given object.
+    
+        Returns -1 if not found.
+    */
+    @objc_ignore
+    ptrdiff_t find(T obj_) {
+        auto idx = this.message!NSUInteger("indexOfObject:", obj_);
+        return idx != NSNotFound ? idx : -1;
     }
 
     /**
         Allows iterating over the array.
     */
-    int opApply(scope dg_type dg) {
+    @objc_ignore
+    int opApply(scope iter_func!T dg) {
         import numem.core.memory.alloc : assumeNothrowNoGC;
 
-        auto ngc_dg = assumeNothrowNoGC!(dg_type)(dg);
+        auto ngc_dg = assumeNothrowNoGC!(iter_func!T)(dg);
         foreach (i; 0..length) {
             int result = ngc_dg(this[i]);
             if (result)
@@ -123,10 +98,11 @@ public:
     /**
         Allows iterating over the array in reverse.
     */
-    int opApplyReverse(scope dg_type dg) {
+    @objc_ignore
+    int opApplyReverse(scope iter_func!T dg) {
         import numem.core.memory.alloc : assumeNothrowNoGC;
 
-        auto ngc_dg = assumeNothrowNoGC!(dg_type)(dg);
+        auto ngc_dg = assumeNothrowNoGC!(iter_func!T)(dg);
         foreach (i; 0..length) {
             int result = ngc_dg(this[i]);
             if (result)
@@ -138,10 +114,11 @@ public:
     /**
         Allows iterating over the array, with index.
     */
-    int opApply(scope dgi_type dg) {
+    @objc_ignore
+    int opApply(scope iter_i_func!T dg) {
         import numem.core.memory.alloc : assumeNothrowNoGC;
 
-        auto ngc_dg = assumeNothrowNoGC!(dgi_type)(dg);
+        auto ngc_dg = assumeNothrowNoGC!(iter_i_func!T)(dg);
         foreach (i; 0..length) {
             int result = ngc_dg(i, this[i]);
             if (result)
@@ -153,10 +130,11 @@ public:
     /**
         Allows iterating over the array in reverse, with index.
     */
-    int opApplyReverse(scope dgi_type dg) {
+    @objc_ignore
+    int opApplyReverse(scope iter_i_func!T dg) {
         import numem.core.memory.alloc : assumeNothrowNoGC;
 
-        auto ngc_dg = assumeNothrowNoGC!(dgi_type)(dg);
+        auto ngc_dg = assumeNothrowNoGC!(iter_i_func!T)(dg);
         foreach (i; 0..length) {
             int result = ngc_dg(i, this[i]);
             if (result)
@@ -165,17 +143,91 @@ public:
         return 0;
     }
 
-    /**
-        Gets the first element
-    */
-    T front() => length > 0 ? this[0] : null;
-
-    /**
-        Gets the last element
-    */
-    T back() => length > 0 ? this[$-1] : null;
-
     /// For D compat.
     alias length = count;
     alias opDollar = length;
+
+    // Link NSArray.
+    mixin ObjcLink!("NSArray");
+}
+
+/**
+    A Mutable NSArray
+*/
+@ObjectiveC @TollFreeBridged!CFMutableArrayRef
+class NSMutableArray(T) : NSArray!T {
+@nogc nothrow:
+public:
+
+    /**
+        Base constructor
+    */
+    this(id self) { super(self); }
+
+    /**
+        Allocates an empty array
+    */
+    this() { super(); }
+
+    /**
+        Empties the array of all its elements.
+    */
+    void clear() {
+        this.message!void("removeAllObjects");
+    }
+
+    /**
+        Removes the first object in the array 
+    */
+    @objc_ignore
+    void popFront() {
+        if (length > 0) this.remove(0);
+    }
+
+    /**
+        Removes the object with the highest-valued index in the array 
+    */
+    void popBack() @selector("removeLastObject");
+
+    /**
+        Removes all occurrences in the array of a given object.
+    */
+    void remove(DRTBindable value) @selector("removeObject:");
+
+    /**
+        Removes the object at index
+    */
+    void remove(NSUInteger index) @selector("removeObjectAtIndex:");
+
+    /**
+        Sorts the array using the sorting function provided.
+    */
+    void sort(NSInteger function(DRTBindable, DRTBindable, void*) compareFunc, void* context=null) @selector("sortUsingFunction:context:");
+
+    /**
+        Sets the receiving array’s elements to those in another given array.
+    */
+    @objc_ignore
+    void opAssign(NSArray other) {
+        this.message!void("setArray:", other);
+    }
+
+    /**
+        Inserts a given object at the end of the array.
+    */
+    @objc_ignore
+    void opOpAssign(string op = "~")(DRTBindable value) {
+        this.message!void("addObject:", value);
+    }
+    
+    /**
+        Inserts a given object into the array’s contents at a given index.
+    */
+    @objc_ignore
+    void opIndexAssign(DRTBindable value, size_t index) {
+        this.message!void("insertObject:atIndex:", value, index);
+    }
+
+    // Link NSMutableArray.
+    mixin ObjcLink!("NSMutableArray");
 }
