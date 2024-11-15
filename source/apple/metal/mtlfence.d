@@ -11,11 +11,8 @@
 module apple.metal.mtlfence;
 import apple.metal;
 import apple.foundation;
-import apple.coredata;
-import apple.coregraphics;
-import apple.uikit;
-import apple.os;
 
+import apple.os;
 import apple.objc;
 import apple.objc : selector;
 

@@ -10,16 +10,11 @@
 */
 module apple.metal.mtldevice;
 import apple.metal;
-import apple.metal.mtltypes;
 import apple.foundation;
-import apple.coredata;
-import apple.coregraphics;
-import apple.uikit;
-import apple.objc;
+
 import apple.os;
-import apple.objc.rt;
-import apple.objc.rt : selector;
-import apple.metal.mtlcommandqueue;
+import apple.objc;
+import apple.objc : selector;
 
 mixin RequireAPIs!(Metal, Foundation);
 
@@ -559,6 +554,27 @@ public:
     */
     @property NSUInteger maxBufferLength() const;
 
+    /**
+        Returns the size, in bytes, of a sparse tile the GPU device creates using a default page size.
+    */
+    @property NSUInteger sparseTileSizeInBytes() const;
+
+    /**
+        The maximum number of unique argument buffer samplers per app.
+    */
+    @property NSUInteger maxArgumentBufferSamplerCount() const;
+
+    /**
+        A Boolean value that indicates whether the GPU device can create and use 
+        dynamic libraries in compute pipelines.
+    */
+    @property bool supportsDynamicLibraries() const;
+
+    /**
+        A Boolean value that indicates whether the GPU device can create and use 
+        dynamic libraries in render pipelines.
+    */
+    @property bool supportsRenderDynamicLibraries() const;
 
     /**
         Creates the system default device.
@@ -631,6 +647,26 @@ public:
         Returns the minimum alignment the GPU device requires to create a texture buffer from a buffer.
     */
     NSUInteger minimumTextureBufferAlignmentForPixelFormat(MTLPixelFormat format) @selector("minimumTextureBufferAlignmentForPixelFormat:");
+
+    /**
+        Creates a Metal library instance that contains the functions 
+        from your app’s default Metal library.
+    */
+    MTLLibrary newLibrary() @selector("newDefaultLibrary");
+
+    /**
+        Synchronously creates a Metal library instance by compiling 
+        the functions in a source string.
+    */
+    @objc_ignore
+    MTLLibrary newLibrary(NSString source, MTLCompileOptions options, ref NSError error) @selector("newLibraryWithSource:options:error:") {
+        MTLLibrary library;
+        id err;
+        
+        library = this.message!MTLLibrary(this.self(), "newLibraryWithSource:options:error:", source.self(), options.self(), &err);
+        error = NSError.wrap!NSError(err);
+        return library;
+    }
 
     /// Link MTLDevice.
     mixin ObjcLink!("_MTLDevice");

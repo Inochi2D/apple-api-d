@@ -1,3 +1,13 @@
+/*
+    Copyright © 2024, Inochi2D Project
+    Distributed under the 2-Clause BSD License, see LICENSE file.
+    
+    Authors: Luna Nielsen
+*/
+
+/**
+    Bindings to NSDictionary
+*/
 module apple.foundation.nsdictionary;
 import apple.corefoundation;
 import apple.foundation;
@@ -13,8 +23,6 @@ mixin RequireAPIs!(Foundation, CoreFoundation, ObjC);
 @ObjectiveC @TollFreeBridged!CFDictionaryRef
 class NSDictionary : NSObject {
 @nogc nothrow:
-private:
-
 public:
 
     /**

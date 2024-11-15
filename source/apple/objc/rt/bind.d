@@ -45,20 +45,20 @@ mixin template ObjcLink(string name=null) {
         static if (hasUDA!(Self, ObjcProtocol)) {
 
             @objc_ignore
-            static id SELF_TYPE() => cast(id)objc_getProtocol(SelfLinkName);
+            static any SELF_TYPE() => cast(id)Protocol.get(SelfLinkName);
 
             override
             @objc_ignore
-            @property id objc_type() inout => cast(id)objc_getProtocol(SelfLinkName);
+            @property any objc_type() inout => cast(id)Protocol.get(SelfLinkName);
 
         } else {
 
             @objc_ignore
-            static id SELF_TYPE() => cast(id)objc_lookUpClass(SelfLinkName);
+            static any SELF_TYPE() => cast(id)Class.lookup(SelfLinkName);
 
             override
             @objc_ignore
-            @property id objc_type() inout => cast(id)objc_lookUpClass(SelfLinkName);
+            @property any objc_type() inout => cast(id)Class.lookup(SelfLinkName);
         }
 
         mixin ObjcLinkObject!Self;

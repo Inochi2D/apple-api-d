@@ -6,7 +6,7 @@
 */
 
 /**
-    Bindings to Apple's Foundation API.
+    Bindings to NSArray
 */
 module apple.foundation.nsarray;
 import apple.corefoundation;

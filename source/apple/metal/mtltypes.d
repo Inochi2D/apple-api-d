@@ -1,14 +1,8 @@
 module apple.metal.mtltypes;
-import apple.foundation;
 import apple.metal;
 import apple.foundation;
-import apple.coredata;
-import apple.coregraphics;
-import apple.uikit;
-import apple.objc;
+import apple.corefoundation;
 import apple.os;
-import apple.objc.rt;
-import apple.objc.rt : selector;
 
 mixin RequireAPIs!(Metal, Foundation);
 

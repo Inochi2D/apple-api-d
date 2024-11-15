@@ -9,12 +9,10 @@
     MTLCommandBuffer
 */
 module apple.metal.mtlcommandbuffer;
-import apple.corefoundation.cftypes;
 import apple.metal;
 import apple.foundation;
-import apple.coredata;
-import apple.coregraphics;
-import apple.uikit;
+import apple.corefoundation;
+
 import apple.os;
 import apple.objc;
 import apple.objc : selector;

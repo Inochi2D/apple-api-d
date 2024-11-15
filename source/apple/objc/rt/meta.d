@@ -44,9 +44,9 @@ struct ObjcProtocol;
 //
 template toObjCArgType(alias arg) {
     static if (is(typeof(arg) : DRTBindable))
-        alias toObjCArgType = id;
+        alias toObjCArgType = inout(id);
     else
-        alias toObjCArgType = arg;
+        alias toObjCArgType = inout(arg);
 }
 
 template toObjCArgTypes(Args...) {

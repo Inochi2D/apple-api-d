@@ -6,7 +6,7 @@
 */
 
 /**
-    Bindings to Apple's Foundation API.
+    Bindings to NSValue
 */
 module apple.foundation.nsvalue;
 import apple.corefoundation;

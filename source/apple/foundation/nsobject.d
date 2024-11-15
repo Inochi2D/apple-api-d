@@ -56,20 +56,6 @@ interface NSObjectProtocol {
 @ObjectiveC
 class NSObject : DRTBindable, NSObjectProtocol {
 @nogc nothrow:
-protected:
-
-    /**
-        Allocates an instance of the object.
-    */
-    final
-    id alloc() => this.message!id(this.objc_type(), "alloc");
-
-    /**
-        Calls base init function.
-    */
-    final
-    id init() => this.message!id(this.self(), "init");
-
 public:
 
     /**
@@ -101,4 +87,18 @@ public:
 
     // Link NSObject.
     mixin ObjcLink;
+}
+
+/**
+    Calls the `alloc` function for the object.
+*/
+id alloc(NSObject obj_) nothrow @nogc {
+    return NSObject.message!id(obj_.objc_type(), "alloc");
+}
+
+/**
+    Calls the `init` function for the object instance.
+*/
+id initialize(id self_) nothrow @nogc {
+    return NSObject.message!id(self_, "init");
 }

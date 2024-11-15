@@ -255,7 +255,10 @@ public:
     /**
         Constructs a new MTLRenderPassDepthAttachmentDescriptor
     */
-    this() { super(this.alloc()); this.self = this.init(); }
+    this() { 
+        super(this.alloc().initialize());
+        this.selfwrap();
+    }
 
 
     // Link
@@ -319,7 +322,10 @@ public:
     /**
         Constructs a new MTLRenderPassDepthAttachmentDescriptor
     */
-    this() { super(this.alloc()); this.self = this.init(); }
+    this() { 
+        super(this.alloc().initialize());
+        this.selfwrap();
+    }
 
 
     // Link
@@ -377,7 +383,10 @@ public:
     /**
         Constructs a new MTLRenderPassStencilAttachmentDescriptor
     */
-    this() { super(this.alloc()); this.self = this.init(); }
+    this() { 
+        super(this.alloc().initialize());
+        this.selfwrap();
+    }
 
 
     // Link
@@ -400,7 +409,10 @@ public:
     /**
         Constructs a new MTLRenderPassColorAttachmentDescriptorArray
     */
-    this() { super(this.alloc()); this.self = this.init(); }
+    this() { 
+        super(this.alloc().initialize());
+        this.selfwrap();
+    }
 
     /**
         Gets the MTLRenderPassColorAttachmentDescriptor at the specified index.

@@ -10,10 +10,15 @@
 */
 module apple.objc.rt.base;
 import apple.objc.rt.abi;
+import apple.objc.block;
 import apple.os;
 
 import apple.objc : ObjC;
 mixin RequireAPIs!(ObjC);
+
+public import core.stdc.stdlib : free;
+public import core.stdc.config : __c_complex_double;
+import apple.objc.rt.meta;
 
 /**
     Specifies the superclass of an instance.
@@ -33,7 +38,7 @@ struct objc_super {
     Class superClass;
 }
 
-struct objc_method_description {
+struct objc_method_description_t {
 
     /**
         The name of the method at runtime. 
@@ -70,54 +75,696 @@ enum objc_AssociationPolicy : size_t {
     OBJC_ASSOCIATION_RETAIN_NONATOMIC   = 1
 }
 
-//
-//      Opaque Types
-//
-
-/// Base type of opaque Class handle.
-struct objc_class;
-struct objc_method;
-struct objc_category;
-struct objc_ivar;
-struct objc_selector;
-struct objc_object;
-struct objc_property;
-struct objc_protocol;
+/**
+    Base opaque type handle
+*/
+struct objc_any;
+alias any = objc_any*;
 
 /**
     Objective-C Class type.
 */
-alias Class = objc_class*;
+struct Class {
+nothrow @nogc:
+public:
+    any ptr;
+    alias ptr this;
+
+    /**
+        Used by CoreFoundation's toll-free bridging.
+    */
+    static Class getFutureClass(const(char)* name) => objc_getFutureClass(name);
+
+    /**
+        Creates a new class and metaclass.
+    */
+    static Class allocateClassPair(Class superclass, const(char)* name, size_t extraBytes) => objc_allocateClassPair(superclass, name, extraBytes);
+
+    /**
+        Returns the class definition of a specified class.
+    */
+    static Class lookup(const(char)* name) => objc_lookUpClass(name);
+
+    /**
+        Returns the metaclass definition of a specified class.
+    */
+    static id lookupMetaclass(const(char)* name) => objc_getMetaClass(name);
+
+    /**
+        Creates and returns a slice of pointers to all registered class definitions.
+
+        you are responsible for freeing the returned slice by calling
+        free on its .ptr value! 
+    */
+    static Class[] classList() {
+        uint classCount;
+        return objc_copyClassList(&classCount)[0..classCount];
+    }
+
+    /**
+        The version number of a class definition.
+    */
+    @property int version_() => class_getVersion(this);
+    @property void version_(int value) => class_setVersion(this, value);
+
+    /**
+        Returns the name of a class.
+    */
+    @property const(char)* name() => class_getName(this);
+
+    /**
+        Returns the name of the dynamic library a class originated from.
+    */
+    @property const(char)* imageName() => class_getImageName(this);
+
+    /**
+        Returns the superclass of a class.
+    */
+    @property Class superclass() => class_getSuperclass(this);
+
+    /**
+        Returns a Boolean value that indicates whether a class object is a metaclass.
+    */
+    @property bool isMetaClass() => class_isMetaClass(this);
+    
+    /**
+        Returns the size of instances of a class.
+    */
+    @property size_t instanceSize() => class_getInstanceSize(this);
+
+    /**
+        Describes the instance variables declared by a class.
+
+        you are responsible for freeing the returned slice by calling
+        free on its .ptr value! 
+    */
+    @property Ivar[] ivars() {
+        uint ivarCount;
+        auto ivars = class_copyIvarList(this, &ivarCount);
+        return ivars[0..ivarCount];
+    }
+
+    /**
+        Describes the instance variables declared by a class.
+
+        you are responsible for freeing the returned slice by calling
+        free on its .ptr value! 
+    */
+    @property objc_property_t[] properties() {
+        uint propCount;
+        auto props = class_copyPropertyList(this, &propCount);
+        return props[0..propCount];
+    }
+
+    /**
+        Describes the instance methods implemented by a class.
+
+        you are responsible for freeing the returned slice by calling
+        free on its .ptr value! 
+    */
+    @property Method[] methods() {
+        uint methodCount;
+        auto methods = class_copyMethodList(this, &methodCount);
+        return methods[0..methodCount];
+    }
+
+    /**
+        Describes the protocols adopted by a class.
+
+        you are responsible for freeing the returned slice by calling
+        free on its .ptr value! 
+    */
+    @property Protocol[] protocols() {
+        uint protoCount;
+        auto protos = class_copyProtocolList(this, &protoCount);
+        return protos[0..protoCount];
+    }
+
+    /**
+        Returns a description of the Ivar layout for a given class. 
+    */
+    @property const(ubyte)* ivarLayout() => class_getIvarLayout(this);
+
+    /**
+        Returns a description of the layout of weak Ivars for a given class.
+    */
+    @property const(ubyte)* weakIvarLayout() => class_getWeakIvarLayout(this);
+
+    /**
+        Returns a Boolean value that indicates whether instances of a class respond 
+        to a particular selector.
+    */
+    bool respondsToSelector(SEL sel) => class_respondsToSelector(this, sel);
+
+    /**
+        Returns a Boolean value that indicates whether a class conforms 
+        to a given protocol.
+    */
+    bool conformsTo(Protocol proto) => class_conformsToProtocol(this, proto);
+
+    /**
+        Returns the Ivar for a specified instance variable of a given class.
+    */
+    Ivar getInstanceVariable(const(char)* name) => class_getInstanceVariable(this, name);
+
+    /**
+        Returns the Ivar for a specified class variable of a given class.
+    */
+    Ivar getClassVariable(const(char)* name) => class_getClassVariable(this, name);
+
+    /**
+        Returns a property with a given name of a given class.
+    */
+    objc_property_t getProperty(const(char)* name) => class_getProperty(this, name);
+
+    /**
+        Returns a specified instance method for a given class.
+    */
+    Method getInstanceMethod(SEL name) => class_getInstanceMethod(this, name);
+
+    /**
+        Returns a pointer to the data structure describing a given class method for a given class.
+    */
+    Method getClassMethod(SEL name) => class_getClassMethod(this, name);
+
+    /**
+        Returns the function pointer that would be called if a particular 
+        message were sent to an instance of a class.
+    */
+    IMP getMethodImplementation(ReturnType)(SEL name) {
+        version(AArch64) return class_getMethodImplementation(this, name);
+        else {
+            static if (is(ReturnType == struct))
+                return class_getMethodImplementation_stret(this, name);
+            else
+                return class_getMethodImplementation(this, name);
+        }
+    }
+
+    /**
+        Sends a message to a class.
+    */
+    T send(T, Args...)(SEL selector, Args args) {
+        return _d_objc_msgSend!T(ptr, selector, args);
+    }
+    T send(T, Args...)(const(char)* selector, Args args) => this.send!T(SEL.get(selector), args);
+
+    /**
+        Adds a protocol to a class.
+    */
+    bool addProtocol(Protocol proto) {
+        return class_addProtocol(this, proto);
+    }
+
+    /**
+        Adds a property to a class.
+    */
+    bool addProperty(const(char)* name, const(objc_property_attribute_t)* attributes, uint attributeCount) {
+        return class_addProperty(this, name, attributes, attributeCount);
+    }
+    bool addProperty(const(char)* name, const(objc_property_attribute_t)[] attributes) => this.addProperty(name, attributes.ptr, cast(uint)attributes.length);
+
+    /**
+        Replaces a property of a class.
+    */
+    void replaceProperty(const(char)* name, const(objc_property_attribute_t)* attributes, uint attributeCount) =>
+        class_replaceProperty(this, name, attributes, attributeCount);
+    void replaceProperty(const(char)* name, const(objc_property_attribute_t)[] attributes) => 
+        class_replaceProperty(this, name, attributes.ptr, cast(uint)attributes.length);
+
+    /**
+        Adds a new method to a class with a given name and implementation.
+    */
+    bool addMethod(SEL name, IMP impl, const(char)* types) {
+        return class_addMethod(this, name, impl, types);
+    }
+
+    /**
+        Replaces the implementation of a method for a given class.
+    */
+    IMP replaceMethod(SEL name, IMP impl, const(char)* types) {
+        return class_replaceMethod(this, name, impl, types);
+    }
+
+    /**
+        Adds a new instance variable to a class. 
+    */
+    bool addIvar(const(char)* name, int size, ubyte alignment, const(char)* types) {
+        return class_addIvar(this, name, size, alignment, types);
+    }
+
+    /**
+        Sets the Ivar layout for a given class. 
+    */
+    void setIvarLayout(const(ubyte)* layout) {
+        class_setIvarLayout(this, layout);
+    }
+
+    /**
+        Sets the layout for weak Ivars for a given class. 
+    */
+    void setWeakIvarLayout(const(ubyte)* layout) {
+        class_setWeakIvarLayout(this, layout);
+    }
+
+    /**
+        Registers a class that was allocated using Class.allocateClassPair.
+    */
+    void register() {
+        objc_registerClassPair(this);
+    }
+
+    /**
+        Creates an instance of a class, allocating memory for the class 
+        in the default malloc memory zone.
+    */
+    id create(size_t extraBytes=0) {
+        return class_createInstance(this, extraBytes);
+    }
+
+    /**
+        Creates an instance of a class at the specified location.
+
+        The location at which to allocate an instance of the cls class.
+        `location` must point to at least `instanceSize` bytes of well-aligned, zero-filled memory.
+    */
+    id createAt(void* location) {
+        return objc_constructInstance(this, location);
+    }
+
+    /**
+        Used by Foundation's Key-Value Observing.
+    */
+    Class duplicate(const(char)* name, size_t extraBytes) {
+        return objc_duplicateClass(this, name, extraBytes);
+    }
+
+    /**
+        Used by CoreFoundation's toll-free bridging.
+    */
+    @system
+    void setFutureClass(const(char)* name) {
+        objc_setFutureClass(this, name);
+    }
+
+    /**
+        Destroys a class and its associated metaclass.
+
+        ### NOTE
+        > Do not call this function if instances of the class or any subclass exist.
+    */
+    @system
+    void dispose() {
+        objc_disposeClassPair(this);
+    }
+}
+
+/**
+    Objective-C Protocol type.
+*/
+struct Protocol {
+nothrow @nogc:
+public:
+    any ptr;
+    alias ptr this;
+
+    /**
+        Returns a specified protocol.
+    */
+    static Protocol get(const(char)* name) => objc_getProtocol(name);
+
+    /**
+        Creates a new protocol instance.
+
+        You must register the returned protocol instance with the `register` function.
+    */
+    static Protocol allocate(const(char)* name) => objc_allocateProtocol(name);
+
+    /**
+        Returns a slice of all the protocols known to the runtime. 
+
+        you are responsible for freeing the returned slice by calling
+        free on its .ptr value! 
+    */
+    static @property Protocol[] all() {
+        uint protoCount;
+        return objc_copyProtocolList(&protoCount)[0..protoCount];
+    }
+
+    /**
+        Returns a the name of a protocol.
+    */
+    @property const(char)* name() => protocol_getName(this);
+
+    /**
+        Returns an array of the properties declared by a protocol.
+
+        you are responsible for freeing the returned slice by calling
+        free on its .ptr value! 
+    */
+    @property objc_property_t[] properties() {
+        uint propCount;
+        auto props = protocol_copyPropertyList(this, &propCount);
+        return props[0..propCount];
+    }
+
+    /**
+        Returns a Boolean value that indicates whether one protocol conforms to another protocol.
+    */
+    bool conformsTo(Protocol other) => protocol_conformsToProtocol(this, other);
+
+    /**
+        Sends a message to a protocol.
+    */
+    T send(T, Args...)(SEL selector, Args args) {
+        return _d_objc_msgSend!T(ptr, selector, args);
+    }
+    T send(T, Args...)(const(char)* selector, Args args) => this.send!T(SEL.get(selector), args);
+
+    /**
+        Adds a registered protocol to another protocol that is under construction.
+    */
+    void addProtocol(Protocol addition) {
+        protocol_addProtocol(this, addition);
+    }
+
+    /**
+        Adds a method to a protocol.
+    */
+    void addMethod(SEL name, const(char)* types, bool isRequiredMethod, bool isInstanceMethod) {
+        protocol_addMethodDescription(this, name, types, isRequiredMethod, isInstanceMethod);
+    }
+
+    /**
+        Returns a method description structure for a specified method of a given protocol.
+    */
+    objc_method_description_t getMethod(SEL selector, bool isRequiredMethod, bool isInstanceMethod) =>
+        protocol_getMethodDescription(this, selector, isRequiredMethod, isInstanceMethod);
+
+    /**
+        Adds a property to a protocol that is under construction.
+    */
+    void addProperty(const(char)* types, const(objc_property_attribute_t)* attributes, uint attributeCount, bool isRequiredProperty, bool isInstanceProperty) =>
+        protocol_addProperty(this, name, attributes, attributeCount, isRequiredProperty, isInstanceProperty);
+    void addProperty(const(char)* types, const(objc_property_attribute_t)[] attributes, bool isRequiredMethod, bool isInstanceMethod) => 
+        protocol_addProperty(this, name, attributes.ptr, cast(uint)attributes.length, isRequiredMethod, isInstanceMethod);
+
+    /**
+        Returns the specified property of a given protocol.
+    */
+    objc_property_t getProperty(const(char)* name, bool isRequiredProperty, bool isInstanceProperty) =>
+        protocol_getProperty(this, name, isRequiredProperty, isInstanceProperty);
+
+    /**
+        Registers a newly created protocol with the Objective-C runtime.
+
+        After a protocol is successfully registered, it is immutable and ready to use.
+    */
+    void register() {
+        objc_registerProtocol(this);
+    }
+
+    /**
+        Returns a Boolean value that indicates whether two protocols are equal.
+    */
+    bool opEquals(const(Protocol) other) const => protocol_isEqual(cast(Protocol)this, cast(Protocol)other);
+}
 
 /**
     Objective-C Method type.
 */
-alias Method = objc_method*;
+struct Method {
+nothrow @nogc:
+public:
+    any ptr;
+    alias ptr this;
+
+    /**
+        Returns the name (of the selector) of a method.
+    */
+    @property const(char)* name() => selector.name;
+
+    /**
+        Returns the selector of a method.
+    */
+    @property SEL selector() => method_getName(this);
+
+    /**
+        Returns a string describing a method's parameter and return types.
+    */
+    @property const(char)* type() => method_getTypeEncoding(this);
+
+    /**
+        Returns the number of arguments accepted by a method.
+    */
+    @property uint argCount() => method_getNumberOfArguments(this);
+
+    /**
+        Returns a method description structure for a specified method.
+    */
+    @property objc_method_description_t* description() => method_getDescription(this);
+
+    /**
+        Returns the implementation of a method.
+    */
+    @property IMP implementation() => method_getImplementation(this);
+    @property IMP implementation(IMP impl) => method_setImplementation(this, impl);
+
+    /**
+        Calls the implementation of a specified method.
+    */
+    T invoke(T, Args...)(id invokeOn, Args args) {
+        return _d_method_invoke!T(invokeOn, this, args);
+    }
+
+    /**
+        Exchanges the implementations of two methods.
+    */
+    void exchangeImplementations(Method other) {
+        method_exchangeImplementations(this, other);
+    }
+}
 
 /**
     Objective-C Instance variable type.
 */
-alias Ivar = objc_category*;
+struct Ivar {
+nothrow @nogc:
+public:
+    any ptr;
+    alias ptr this;
+
+    /**
+        Returns the name of an instance variable.
+    */
+    @property const(char)* name() => ivar_getName(this);
+
+    /**
+        Returns the type string of an instance variable.
+    */
+    @property const(char)* type() => ivar_getTypeEncoding(this);
+
+    /**
+        Returns the offset of an instance variable.
+    */
+    @property ptrdiff_t offset() => ivar_getOffset(this);
+}
 
 /**
     Objective-C Category type.
 */
-alias Category = objc_category*;
+struct Category {
+nothrow @nogc:
+public:
+    any ptr;
+    alias ptr this;
+
+}
+
+/**
+    An Objective-C declared property.
+*/
+struct objc_property_t {
+nothrow @nogc:
+public:
+    any ptr;
+    alias ptr this;
+
+    /**
+        Returns the name of a property.
+    */
+    @property const(char)* name() => property_getName(this);
+
+    /**
+        Returns the name of a property.
+    */
+    @property const(char)* attributes() => property_getAttributes(this);
+}
 
 /**
     A pointer to an instance of a class.
 */
-alias id = objc_object*;
+struct id {
+nothrow @nogc:
+public:
+    any ptr;
+    alias ptr this;
 
-/**
-    An opaque type that represents an Objective-C declared property.
-*/
-alias objc_property_t = objc_property*;
+    /**
+        Returns a null object.
+    */
+    static id none() => id(null);
+
+    /**
+        Loads the object referenced by a weak pointer and returns it.
+    */
+    static id loadWeak(id* location) => objc_loadWeak(location);
+
+    /**
+        Returns the superclass of a class.
+    */
+    @property Class class_() => object_getClass(this);
+    @property Class class_(Class klass) => object_setClass(this, klass);
+
+    /**
+        Convenience function that retuns the superclass of this object's class.
+    */
+    @property Class superclass() => this.class_.superclass;
+
+    /**
+        Returns a pointer to any extra bytes allocated with a instance given object.
+    */
+    @property void* indexedIvars() =>  object_getIndexedIvars(this);
+
+    /**
+        Returns the class name of a given object.
+    */
+    @property const(char)* name() => object_getClassName(this);
+
+    /**
+        Returns a copy of a given object. 
+    */
+    id copy(size_t extraSize=0) {
+        return object_copy(this, this.class_.instanceSize()+extraSize);
+    }
+
+    /**
+        Sends a message with a simple return value to an instance of a class.
+    */
+    T send(T, Args...)(SEL selector, Args args) {
+        return _d_objc_msgSend!T(ptr, selector, args);
+    }
+    T send(T, Args...)(const(char)* selector, Args args) => 
+        this.send!T(SEL.get(selector), args);
+
+    /**
+        Sends a message with a simple return value to the 
+        superclass of an instance of a class.
+    */
+    T send(T, Args...)(Class superclass, SEL selector, Args args) {
+        objc_super supercall = {
+            reciever: this,
+            superClass: superclass
+        };
+        return _d_objc_msgSendSuper!T(&supercall, selector, args);
+    }
+    T send(T, Args...)(Class superclass, const(char)* selector, Args args) => 
+        this.send!T(superclass, SEL.get(selector), args);
+
+    /**
+        Returns the value associated with a given object for a given key. 
+    */
+    id getAssociation(const(void)* key) {
+        return objc_getAssociatedObject(this, key);
+    }
+
+    /**
+        Sets an associated value for a given object using a given key and association policy. 
+    */
+    void associate(const(void)* key, id value, objc_AssociationPolicy policy) {
+        objc_setAssociatedObject(this, key, value, policy);
+    }
+
+    /**
+        Removes an associated value for a given object using a given key. 
+    */
+    void disassociate(const(void)* key) {
+        objc_setAssociatedObject(this, key, id(null), objc_AssociationPolicy.OBJC_ASSOCIATION_ASSIGN);
+    }
+
+    /**
+        Removes all associations for a given object.
+    */
+    void disassociateAll() {
+        objc_removeAssociatedObjects(this);
+    }
+
+    /**
+        Obtains the value of an instance variable of a class instance.
+    */
+    T getVariable(T)(const(char)* name) {
+        T outValue;
+        object_getInstanceVariable(this, name, cast(void**)&outValue); // @suppress(dscanner.unused_result)
+        return outValue;
+    }
+
+    /**
+        Changes the value of an instance variable of a class instance.
+    */
+    void setVariable(T)(const(char)* name, T* value) {
+        object_setInstanceVariable(this, name, cast(void*)value); // @suppress(dscanner.unused_result)
+    }
+
+    /**
+        Stores a value in a __weak variable.
+    */
+    id storeWeak(id* location) {
+        return objc_storeWeak(location, this);
+    }
+
+    /**
+        Destroys an instance of a class without freeing memory and 
+        removes any of its associated references.
+    */
+    void* destruct() {
+        return objc_destructInstance(this);
+    }
+
+    /**
+        Frees the memory occupied by a given object. 
+    */
+    void dispose() {
+        object_dispose(this); // @suppress(dscanner.unused_result)
+    }
+}
 
 /**
     Objective-C Selector type.
 */
-alias SEL = objc_selector*;
+struct SEL {
+nothrow @nogc:
+public:
+    any ptr;
+    alias ptr this;
+
+    /**
+        Registers a method with the Objective-C runtime system, 
+        maps the method name to a selector, 
+        and returns the selector value.
+    */
+    static SEL register(const(char)* name) => sel_registerName(name); 
+    static SEL get(const(char)* name) => sel_getUid(name);
+
+    /**
+        Returns the name of the method specified by a given selector.
+    */
+    @property const(char)* name() => sel_getName(this);
+
+    /**
+        Returns a Boolean value that indicates whether two selectors are equal.
+    */
+    bool opEquals(const(SEL) other) const => sel_isEqual(cast(SEL)this, cast(SEL)other);
+}
 
 /**
     A pointer to the start of a method implementation.
@@ -125,402 +772,308 @@ alias SEL = objc_selector*;
 alias IMP = extern(C) id function(id, SEL, ...) @nogc nothrow;
 
 /**
-    Objective-C Protocol type.
+    Disassociates a block from an IMP that was created using `fromBlock`
+    and releases the copy of the block that was created.
 */
-alias Protocol = objc_protocol*;
+bool removeBlock(IMP imp) {
+    return imp_removeBlock(imp);
+}
 
+/**
+    Creates an IMP from a block
+*/
+IMP fromBlock(BlockT)(BlockT block) if (is(BlockT == Block!(id, Params), Params...)) {
+    return imp_implementationWithBlock(cast(void*)&block);
+}
 
 static if (OBJC_ABI >= 0):
 extern(C) @nogc nothrow:
 
 
-//
-//      Classes
-//
-
-/**
-    Returns the name of a class.
-*/
-extern const(char)* class_getName(Class cls);
-
-/**
-    Returns the superclass of a class.
-*/
-extern Class class_getSuperclass(Class cls);
-
-/**
-    Returns a Boolean value that indicates whether a class object is a metaclass.
-*/
-extern bool class_isMetaClass(Class cls);
-
-/**
-    Returns the size of instances of a class.
-*/
-extern size_t class_getInstanceSize(Class cls);
-
-/**
-    Returns the Ivar for a specified instance variable of a given class.
-*/
-extern Ivar class_getInstanceVariable(Class cls, const(char)* name);
-
-/**
-    Returns the Ivar for a specified class variable of a given class.
-*/
-extern Ivar class_getClassVariable(Class cls, const(char)* name);
-
-/**
-    Describes the instance variables declared by a class.
-*/
-extern Ivar* class_addIvar(Class cls, const(char)* name, int size, ubyte alignment, const(char)* types);
-
-/**
-    Describes the instance variables declared by a class.
-*/
-extern Ivar* class_copyIvarList(Class cls, uint* outCount);
-
-/**
-    Returns a description of the Ivar layout for a given class. 
-*/
-extern const(ubyte)* class_getIvarLayout(Class cls);
-
-/**
-    Sets the Ivar layout for a given class..
-*/
-extern void class_setIvarLayout(Class cls, const(ubyte)* layout);
-
-/**
-    Returns a description of the layout of weak Ivars for a given class. 
-*/
-extern const(ubyte)* class_getWeakIvarLayout(Class cls);
-
-/**
-    Sets the layout for weak Ivars for a given class.
-*/
-extern void class_setWeakIvarLayout(Class cls, const(ubyte)* layout);
-
-/**
-    Returns a property with a given name of a given class.
-*/
-extern objc_property_t class_getProperty(Class cls, const(char)* name);
-
-/**
-    Describes the properties declared by a class.
-*/
-extern objc_property_t* class_copyPropertyList(Class cls, uint* outCount);
-
-/**
-    Adds a new method to a class with a given name and implementation.
-*/
-extern bool class_addMethod(Class cls, SEL name, IMP imp, const(char)* types);
-
-/**
-    Returns a specified instance method for a given class.
-*/
-extern Method class_getInstanceMethod(Class cls, SEL name);
-
-/**
-    Returns a pointer to the data structure describing a given class method for a given class.
-*/
-extern Method class_getClassMethod(Class cls, SEL name);
-
-/**
-    Describes the instance methods implemented by a class.
-*/
-extern Method* class_copyMethodList(Class cls, uint* outCount);
-
-/**
-    Replaces the implementation of a method for a given class.
-*/
-extern IMP class_replaceMethod(Class cls, SEL name, IMP imp, const(char)* types);
-
-/**
-    Returns the function pointer that would be called if a particular message were sent to an instance of a class.
-*/
-extern IMP class_getMethodImplementation(Class cls, SEL name);
-
-/**
-    Returns a Boolean value that indicates whether instances of a class respond to a particular selector.
-*/
-extern bool class_respondsToSelector(Class cls, SEL sel);
-
-/**
-    Adds a protocol to a class.
-*/
-extern bool class_addProtocol(Class cls, Protocol* protocol);
-
-/**
-    Adds a property to a class.
-*/
-extern bool class_addProperty(Class cls, const(char)* name, const(objc_property_attribute_t)* attributes, uint attributeCount);
-
-/**
-    Replace a property of a class.
-*/
-extern void class_replaceProperty(Class cls, const(char)* name, const(objc_property_attribute_t)* attributes, uint attributeCount);
-
-/**
-    Returns a Boolean value that indicates whether a class conforms to a given protocol.
-*/
-extern bool class_conformsToProtocol(Class cls, Protocol* protocol);
-
-/**
-    Describes the protocols adopted by a class.
-*/
-extern Protocol* class_copyProtocolList(Class cls, uint *outCount);
-
-/**
-    Returns the version number of a class definition.
-*/
-extern int class_getVersion(Class cls);
-
-/**
-
-*/
-extern void class_setVersion(Class cls, int version_);
-
-/**
-    Used by CoreFoundation's toll-free bridging.
-*/
-extern Class objc_getFutureClass(const(char)* name);
-
-/**
-    Used by CoreFoundation's toll-free bridging.
-*/
-extern void objc_setFutureClass(Class cls, const(char)* name);
-
-/**
-    Creates a new class and metaclass.
-*/
-extern Class objc_allocateClassPair(Class superclass, const(char)*name, size_t extraBytes);
-
-/**
-    Destroys a class and its associated metaclass.
-*/
-extern void objc_disposeClassPair(Class cls);
-
-/**
-    Registers a class that was allocated using objc_allocateClassPair.
-*/
-extern void objc_registerClassPair(Class cls);
-
-/**
-    Used by Foundation's Key-Value Observing.
-*/
-extern Class objc_duplicateClass(Class original, const(char)*name, size_t extraBytes);
-
-
-
-//
-//      Instances
-//
-
-/**
-    Creates an instance of a class, allocating memory for the class in the default malloc memory zone.
-*/
-extern id class_createInstance(Class cls, size_t extraBytes);
-
-/**
-    Creates an instance of a class at the specified location.
-*/
-extern id objc_constructInstance(Class cls, void* bytes);
-
-/**
-    Destroys an instance of a class without freeing memory and removes any of its associated references.
-*/
-extern void* objc_destructInstance(id obj);
-
-/**
-    Returns a copy of a given object. 
-*/
-extern id object_copy(id obj, size_t size);
-
-/**
-    Frees the memory occupied by a given object. 
-*/
-extern id object_dispose(id obj);
-
-/**
-    Changes the value of an instance variable of a class instance.
-*/
-extern Ivar object_setInstanceVariable(id obj, const(char)* name, void* value);
-
-/**
-
-*/
-extern Ivar object_getInstanceVariable(id obj, const(char)* name, void** outValue);
-
-/**
-    Returns a pointer to any extra bytes allocated with a instance given object.
-*/
-extern void* object_getIndexedIvars(id obj);
-
-/**
-    Reads the value of an instance variable in an object.
-*/
-extern id object_getIvar(id obj, Ivar ivar);
-
-/**
-    Sets the value of an instance variable in an object.
-*/
-extern void object_setIvar(id obj, Ivar ivar, id value);
-
-/**
-    Returns the class name of a given object.
-*/
-extern const(char)* object_getClassName(id obj);
-
-/**
-    Returns the class of an object. 
-*/
-extern Class object_getClass(id obj);
-
-/**
-    Sets the class of an object.
-*/
-extern Class object_setClass(id obj, Class cls);
-
-//
-//      Class Definitions
-//
-
-/**
-    Obtains the list of registered class definitions.
-*/
-extern int objc_getClassList(Class* buffer, int bufferCount);
-
-/**
-    Creates and returns a list of pointers to all registered class definitions.
-*/
-extern Class* objc_copyClassList(uint* outCount);
-
-/**
-    Returns the class definition of a specified class.
-*/
-extern Class objc_lookUpClass(const(char)* name);
-
-/**
-    Returns the class definition of a specified class.
-*/
-extern id objc_getClass(const(char)* name);
-
-/**
-
-*/
-extern Class objc_getRequiredClass(const(char)* name);
-
-/**
-    Returns the metaclass definition of a specified class.
-*/
-extern id objc_getMetaClass(const(char)* name);
-
-//
-//      Instance Variables
-//
-
-/**
-    Returns the name of an instance variable.
-*/
-extern const(char)* ivar_getName(Ivar v);
-
-/**
-    Returns the type string of an instance variable.
-*/
-extern const(char)* ivar_getTypeEncoding(Ivar v);
-
-/**
-    Returns the offset of an instance variable.
-*/
-extern ptrdiff_t ivar_getOffset(Ivar v);
-
-//
-//      Associative References
-//
-
-/**
-    Sets an associated value for a given object using a given key and association policy. 
-*/
-extern void objc_setAssociatedObject(id object, const(void)* key, id value, objc_AssociationPolicy policy);
-
-/**
-    Returns the value associated with a given object for a given key. 
-*/
-extern id objc_getAssociatedObject(id object, const(void)* key);
-
-/**
-    Removes all associations for a given object.
-*/
-extern void objc_removeAssociatedObjects(id object);
-
-//
-//      Messages
-//
-
-/**
-    Sends a message with a simple return value to an instance of a class.
-*/
-extern void objc_msgSend(id instance, SEL, ...);
-
-static if (OBJC_ABI == 1) {
+private {
+
+    // Working with Classes
+    // NOTE: Platform implementation differs
+    // SEE: https://github.com/opensource-apple/objc4/blob/master/runtime/message.h
+    extern const(char)* class_getName(Class cls);
+    extern Class class_getSuperclass(Class cls);
+    extern bool class_isMetaClass(Class cls);
+    extern size_t class_getInstanceSize(Class cls);
+    extern Ivar class_getInstanceVariable(Class cls, const(char)* name);
+    extern Ivar class_getClassVariable(Class cls, const(char)* name);
+    extern bool class_addIvar(Class cls, const(char)* name, int size, ubyte alignment, const(char)* types);
+    extern Ivar* class_copyIvarList(Class cls, uint* outCount);
+    extern const(ubyte)* class_getIvarLayout(Class cls);
+    extern void class_setIvarLayout(Class cls, const(ubyte)* layout);
+    extern const(ubyte)* class_getWeakIvarLayout(Class cls);
+    extern void class_setWeakIvarLayout(Class cls, const(ubyte)* layout);
+    extern objc_property_t class_getProperty(Class cls, const(char)* name);
+    extern objc_property_t* class_copyPropertyList(Class cls, uint* outCount);
+    extern bool class_addMethod(Class cls, SEL name, IMP imp, const(char)* types);
+    extern Method class_getInstanceMethod(Class cls, SEL name);
+    extern Method class_getClassMethod(Class cls, SEL name);
+    extern Method* class_copyMethodList(Class cls, uint* outCount);
+    extern IMP class_replaceMethod(Class cls, SEL name, IMP imp, const(char)* types);
+    extern IMP class_getMethodImplementation(Class cls, SEL name);
+    version(AArch64) {}
+    else extern IMP class_getMethodImplementation_stret(Class cls, SEL name);
+    extern bool class_respondsToSelector(Class cls, SEL sel);
+    extern bool class_addProtocol(Class cls, Protocol protocol);
+    extern bool class_addProperty(Class cls, const(char)* name, const(objc_property_attribute_t)* attributes, uint attributeCount);
+    extern void class_replaceProperty(Class cls, const(char)* name, const(objc_property_attribute_t)* attributes, uint attributeCount);
+    extern bool class_conformsToProtocol(Class cls, Protocol protocol);
+    extern Protocol* class_copyProtocolList(Class cls, uint *outCount);
+    extern int class_getVersion(Class cls);
+    extern void class_setVersion(Class cls, int version_);
+    extern Class objc_getFutureClass(const(char)* name);
+    extern void objc_setFutureClass(Class cls, const(char)* name);
+
+    // Adding Classes
+    extern Class objc_allocateClassPair(Class superclass, const(char)* name, size_t extraBytes);
+    extern void objc_disposeClassPair(Class cls);
+    extern void objc_registerClassPair(Class cls);
+    extern Class objc_duplicateClass(Class original, const(char)* name, size_t extraBytes);
+
+    // Instantiating Classes
+    extern id class_createInstance(Class cls, size_t extraBytes);
+    extern id objc_constructInstance(Class cls, void* bytes);
+    extern void* objc_destructInstance(id obj);
+
+    // Working with Instances
+    extern id object_copy(id obj, size_t size);
+    extern id object_dispose(id obj);
+    extern Ivar object_setInstanceVariable(id obj, const(char)* name, void* value);
+    extern Ivar object_getInstanceVariable(id obj, const(char)* name, void** outValue);
+    extern void* object_getIndexedIvars(id obj);
+    extern id object_getIvar(id obj, Ivar ivar);
+    extern void object_setIvar(id obj, Ivar ivar, id value);
+    extern const(char)* object_getClassName(id obj);
+    extern Class object_getClass(id obj);
+    extern Class object_setClass(id obj, Class cls);
+
+    // Obtaining Class Definitions
+    extern int objc_getClassList(Class* buffer, int bufferCount);
+    extern Class* objc_copyClassList(uint* outCount);
+    extern Class objc_lookUpClass(const(char)* name);
+    extern id objc_getClass(const(char)* name);
+    extern id objc_getMetaClass(const(char)* name);
+
+    // Working with Instance Variables
+    extern const(char)* ivar_getName(Ivar v);
+    extern const(char)* ivar_getTypeEncoding(Ivar v);
+    extern ptrdiff_t ivar_getOffset(Ivar v);
+
+    // Associative References
+    extern void objc_setAssociatedObject(id object, const(void)* key, id value, objc_AssociationPolicy policy);
+    extern id objc_getAssociatedObject(id object, const(void)* key);
+    extern void objc_removeAssociatedObjects(id object);
+
+    // Sending Messages
+    // NOTE: Platform implementation differs
+    // SEE: https://github.com/opensource-apple/objc4/blob/master/runtime/message.h#L118
+    extern void objc_msgSend(id instance, SEL, ...);
+    extern void objc_msgSendSuper(objc_super* super_, SEL, ...);
+    version(ARM) extern void objc_msgSend_stret(void* returnObject, id instance, SEL, ...);
+    version(ARM) extern void objc_msgSendSuper_stret(objc_super* super_, SEL, ...);
+    version(X86) extern void objc_msgSend_stret(void* returnObject, id instance, SEL, ...);
+    version(X86) extern void objc_msgSendSuper_stret(objc_super* super_, SEL, ...);
+    version(X86) extern void objc_msgSend_fpret(id instance, SEL, ...);
+    version(X86_64) extern void objc_msgSend_fpret(id instance, SEL, ...);
+    version(X86_64) extern void objc_msgSend_fp2ret(id instance, SEL, ...);
+    version(X86_64) extern void objc_msgSend_stret(void* returnObject, id instance, SEL, ...);
+    version(X86_64) extern void objc_msgSendSuper_stret(objc_super* super_, SEL, ...);
+
+    // Working with Methods
+    // NOTE: Platform implementation differs
+    // SEE: https://github.com/opensource-apple/objc4/blob/master/runtime/message.h#L232
+    extern void method_invoke(id receiver, Method method, ...);
+    version(ARM) extern void method_invoke_stret(id receiver, Method method, ...);
+    version(X86) extern void method_invoke_stret(id receiver, Method method, ...);
+    version(X86_64) extern void method_invoke_stret(id receiver, Method method, ...);
+    extern SEL method_getName(Method m);
+    extern IMP method_getImplementation(Method m);
+    extern const(char)* method_getTypeEncoding(Method m);
+    extern char* method_copyReturnType(Method m);
+    extern char* method_copyArgumentType(Method m, uint index);
+    extern void method_getReturnType(Method m, char* dst, size_t dst_len);
+    extern uint method_getNumberOfArguments(Method m);
+    extern objc_method_description_t* method_getDescription(Method m);
+    extern IMP method_setImplementation(Method m, IMP imp);
+    extern void method_exchangeImplementations(Method m1, Method m2);
+
+    // Working with Libraries
+    extern const(char)** objc_copyImageNames(uint* outCount);
+    extern const(char)* class_getImageName(Class cls);
+    extern const(char)** objc_copyClassNamesForImage(const(char)* image, uint* outCount);
+
+    // Working with Selectors
+    extern const(char)* sel_getName(SEL sel);
+    extern SEL sel_registerName(const(char)* str);
+    extern SEL sel_getUid(const(char)* str);
+    extern bool sel_isEqual(SEL lhs, SEL rhs);
+
+    // Working with Protocols
+    extern Protocol objc_getProtocol(const(char)* name);
+    extern Protocol* objc_copyProtocolList(uint* outCount);
+    extern Protocol objc_allocateProtocol(const(char)* name);
+    extern void objc_registerProtocol(Protocol proto);
+    extern void protocol_addMethodDescription(Protocol proto, SEL name, const(char)* types, bool isRequiredMethod, bool isInstanceMethod);
+    extern void protocol_addProtocol(Protocol proto, Protocol addition);
+    extern void protocol_addProperty(Protocol proto, const(char)* name, const(objc_property_attribute_t)*attributes, uint attributeCount, bool isRequiredProperty, bool isInstanceProperty);
+    extern const(char)* protocol_getName(Protocol proto);
+    extern bool protocol_isEqual(Protocol proto, Protocol other);
+    extern objc_method_description_t* protocol_copyMethodDescriptionList(Protocol proto, bool isRequiredMethod, bool isInstanceMethod, uint* outCount);
+    extern objc_method_description_t protocol_getMethodDescription(Protocol proto, SEL aSel, bool isRequiredMethod, bool isInstanceMethod);
+    extern objc_property_t* protocol_copyPropertyList(Protocol proto, uint* outCount);
+    extern objc_property_t protocol_getProperty(Protocol proto, const(char)* name, bool isRequiredProperty, bool isInstanceProperty);
+    extern Protocol* protocol_copyProtocolList(Protocol proto, uint *outCount);
+    extern bool protocol_conformsToProtocol(Protocol proto, Protocol other);
+
+    // Working with Properties
+    const(char)* property_getName(objc_property_t property);
+    const(char)* property_getAttributes(objc_property_t property);
+    char* property_copyAttributeValue(objc_property_t property, const(char)* attributeName);
+    objc_property_attribute_t* property_copyAttributeList(objc_property_t property, uint* outCount);
+
+    // Using Objective-C Language Features
+    IMP imp_implementationWithBlock(void* block);
+    bool imp_removeBlock(IMP anImp);
+    id objc_loadWeak(id* location);
+    id objc_storeWeak(id* location, id obj);
+
+    // HELPERS FOR MESSAGE SEND AND INVOKE.
+    // SEE: https://github.com/opensource-apple/objc4/blob/master/runtime/message.h#L143
+    T _d_objc_msgSend(T, Args...)(any instance, SEL selector, Args args) {
+        import std.traits : isFloatingPoint;
+
+        alias fn = T function(any, SEL, toObjCArgTypes!(Args)) @nogc nothrow;
+        alias stret_fn = void function(T*, any, SEL, toObjCArgTypes!(Args)) @nogc nothrow;
+
+        version(ARM) {
+
+            // 32-bit ARM
+            static if (is(T == struct)) {
+                T tmp;
+                (cast(stret_fn)&objc_msgSend_stret)(&tmp, instance, selector, args);
+                return tmp;
+            } else {
+                return (cast(fn)&objc_msgSend)(instance, selector, args);
+            }
+        } else version(X86) {
+
+            // 32-bit X86
+            static if (is(T == struct)) {
+                T tmp;
+                (cast(stret_fn)&objc_msgSend_stret)(&tmp, instance, selector, args);
+                return tmp;
+            } else static if (isFloatingPoint!T) {
+                return (cast(fn)&objc_msgSend_fpret)(instance, selector, args);
+            } else {
+                return (cast(fn)&objc_msgSend)(instance, selector, args);
+            }
+        }  else version(X86_64) {
+
+            // 64-bit X86
+            static if (is(T == struct)) {
+                T tmp;
+                (cast(stret_fn)&objc_msgSend_stret)(&tmp, instance, selector, args);
+                return tmp;
+            } else static if (is(T == float) || is(T == double) || is(T == real)) {
+                return (cast(fn)&objc_msgSend_fpret)(instance, selector, args);
+            }  else static if (is(T == __c_complex_double)) {
+                return (cast(fn)&objc_msgSend_fp2ret)(instance, selector, args);
+            } else {
+                return (cast(fn)&objc_msgSend)(instance, selector, args);
+            }
+        } else {
+
+            // AArch64 uses msgSend in all cases.
+            return (cast(fn)&objc_msgSend)(instance, selector, args);
+        }
+    }
     
-    /**
-        Sends a message with a struct return value to an instance of a class.
-    */
-    extern void objc_msgSend_stret(void* returnObject, id instance, SEL, ...);
+    // SEE: https://github.com/opensource-apple/objc4/blob/master/runtime/message.h#L143
+    T _d_objc_msgSendSuper(T, Args...)(objc_super* instance, SEL selector, Args args) {
+        import std.traits : isFloatingPoint;
 
-    /**
-        Sends a message with a float return value to an instance of a class.
-    */
-    extern void objc_msgSend_fpret(id instance, SEL, ...);
+        alias fn = T function(objc_super*, SEL, toObjCArgTypes!(Args)) @nogc nothrow;
+        alias stret_fn = void function(T*, objc_super*, SEL, toObjCArgTypes!(Args)) @nogc nothrow;
+
+        version(ARM) {
+
+            // 32-bit ARM
+            static if (is(T == struct)) {
+                T tmp;
+                (cast(stret_fn)&objc_msgSendSuper_stret)(&tmp, instance, selector, args);
+                return tmp;
+            } else {
+                return (cast(fn)&objc_msgSendSuper)(instance, selector, args);
+            }
+        } else version(X86) {
+
+            // 32-bit X86
+            static if (is(T == struct)) {
+                T tmp;
+                (cast(stret_fn)&objc_msgSendSuper_stret)(&tmp, instance, selector, args);
+                return tmp;
+            } else {
+                return (cast(fn)&objc_msgSendSuper)(instance, selector, args);
+            }
+        }  else version(X86_64) {
+
+            // 64-bit X86
+            static if (is(T == struct)) {
+                T tmp;
+                (cast(stret_fn)&objc_msgSendSuper_stret)(&tmp, instance, selector, args);
+                return tmp;
+            } else {
+                return (cast(fn)&objc_msgSendSuper)(instance, selector, args);
+            }
+        } else {
+
+            // AArch64 uses msgSend in all cases.
+            return (cast(fn)&objc_msgSend)(instance, selector, args);
+        }
+    }
+
+    T _d_method_invoke(T, Args...)(id instance, Method method, Args args) {
+        alias fn = T function(id, Method, toObjCArgTypes!(Args)) @nogc nothrow;
+        alias stret_fn = void function(T*, id, Method, toObjCArgTypes!(Args)) @nogc nothrow;
+
+        version(ARM) {
+
+            // 32-bit ARM
+            static if (is(T == struct)) {
+                T tmp;
+                (cast(stret_fn)&method_invoke_stret)(&tmp, instance, method, args);
+                return tmp;
+            } else {
+                return (cast(fn)&method_invoke)(instance, method, args);
+            }
+        } else version(X86) {
+
+            // 32-bit X86
+            static if (is(T == struct)) {
+                T tmp;
+                (cast(stret_fn)&method_invoke_stret)(&tmp, instance, method, args);
+                return tmp;
+            } else {
+                return (cast(fn)&method_invoke)(instance, method, args);
+            }
+        }  else version(X86_64) {
+
+            // 64-bit X86
+            static if (is(T == struct)) {
+                T tmp;
+                (cast(stret_fn)&method_invoke_stret)(&tmp, instance, method, args);
+                return tmp;
+            } else {
+                return (cast(fn)&method_invoke)(instance, method, args);
+            }
+        } else {
+
+            // AArch64 uses msgSend in all cases.
+            return (cast(fn)&objc_msgSend)(instance, method, args);
+        }
+    }
 }
-
-/**
-    Sends a message with a simple return value to the superclass of an instance of a class.
-*/
-extern void objc_msgSendSuper(objc_super* super_, SEL, ...);
-
-static if (OBJC_ABI == 1) {
-
-    /**
-        Sends a message with a data-structure return value to the superclass of an instance of a class.
-    */
-    extern void objc_msgSendSuper_stret(objc_super* super_, SEL, ...);
-
-}
-
-//
-//      Selectors
-//
-
-/**
-    Gets the name of a selector.
-*/
-extern const(char)* sel_getName(SEL sel);
-
-/**
-    Registers a method with the Objective-C runtime system, maps the method name to a selector, and returns the selector value.
-*/
-extern SEL sel_registerName(const(char)*);
-
-/**
-    Registers a method name with the Objective-C runtime system.
-*/
-extern SEL sel_getUid(const(char)*);
-
-/**
-    Returns a Boolean value that indicates whether two selectors are equal.
-*/
-extern bool sel_isEqual(SEL lhs, SEL rhs);
-
-//
-//      Implementation
-//
-
-/**
-    Creates a pointer to a function that calls the specified block when the method is called.
-*/
-IMP imp_implementationWithBlock(id block);
-
-/**
-    Returns the specified protocol. 
-*/
-Protocol objc_getProtocol(const(char)*);

@@ -22,6 +22,6 @@ pragma(lib, "objc");
 public import apple.objc.block;
 public import apple.objc.rt.bind : ObjcLink;
 public import apple.objc.rt.meta;
-public import apple.objc.rt.base : id, Class, Protocol, SEL;
+public import apple.objc.rt.base;
 
 alias selector = apple.objc.rt.selector;

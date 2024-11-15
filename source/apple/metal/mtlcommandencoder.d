@@ -11,14 +11,10 @@
 module apple.metal.mtlcommandencoder;
 import apple.metal;
 import apple.foundation;
-import apple.coredata;
-import apple.coregraphics;
-import apple.uikit;
-import apple.os;
 
+import apple.os;
 import apple.objc;
 import apple.objc : selector;
-import apple.metal.mtlrenderpipeline;
 
 mixin RequireAPIs!(Metal, Foundation);
 

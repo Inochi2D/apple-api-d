@@ -6,7 +6,7 @@
 */
 
 /**
-    Bindings to Apple's Foundation API.
+    Bindings to NSString
 */
 module apple.foundation.nsstring;
 import apple.corefoundation;
@@ -17,17 +17,19 @@ import apple.os;
 
 mixin RequireAPIs!(Foundation, CoreFoundation, ObjC);
 
+// NSString init funcs
+private nothrow @nogc {
+    id initWithUTF8String(id self_, const(char)* str) {
+        return NSObject.message!id(self_, "initWithUTF8String:", str);
+    }
+}
+
 /**
     NSString
 */
 @ObjectiveC @TollFreeBridged!CFStringRef
 class NSString : NSObject {
 @nogc nothrow:
-protected:
-
-    /// Initialize NSString with characters.
-    id initWithUTF8String(const(char)* str) @selector("initWithUTF8String:");
-
 public:
 
     /**
@@ -49,8 +51,7 @@ public:
         Construct with UTF8 string.
     */
     this(const(char)* str) {
-        super(this.message!id(this.objc_type(), "string"));
-        this.self = this.initWithUTF8String(str);
+        super(this.alloc().initWithUTF8String(str));
         this.selfwrap();
     }
 
@@ -73,6 +74,14 @@ public:
         Base constructor
     */
     this(id self) { super(self); }
+
+    /**
+        Construct with UTF8 string.
+    */
+    this(const(char)* str) {
+        super(this.alloc().initWithUTF8String(str));
+        this.selfwrap();
+    }
 
     // Link NSMutableString.
     mixin ObjcLink;

@@ -11,13 +11,10 @@
 module apple.metal.mtlcommandqueue;
 import apple.metal;
 import apple.foundation;
-import apple.coredata;
-import apple.coregraphics;
-import apple.uikit;
+
 import apple.os;
-import apple.objc.rt;
-import apple.objc.rt : selector;
-import apple.metal.mtlcommandbuffer;
+import apple.objc;
+import apple.objc : selector;
 
 mixin RequireAPIs!(Metal, Foundation);
 
