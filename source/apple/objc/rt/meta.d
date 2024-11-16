@@ -29,6 +29,28 @@ struct ObjectiveC;
 struct selector { string sel; }
 
 /**
+    An object remains “alive” as long as there is a strong pointer to it.
+
+    This is the default mode that DRT assumes.
+*/
+enum __strong;
+
+/**
+    Specifies a reference that does not keep the referenced object alive. 
+    A weak reference is set to nil when there are 
+    no strong references to the object. 
+*/
+enum __weak;
+
+/**
+    Specifies a reference that does not keep the referenced object alive and 
+    is not set to nil when there are no strong references to the object. 
+    
+    If the object it references is deallocated, the pointer is left dangling.
+*/
+enum __unsafe_unretained;
+
+/**
     UDA for specifying a declared type member should not be bound
     to the Objective-C runtime.
 */

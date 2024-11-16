@@ -17,6 +17,7 @@ mixin RequireAPIs!(ObjC);
 import apple.objc.rt.base;
 import apple.objc.rt.abi;
 import apple.objc.rt.meta;
+import apple.objc.rt.drt;
 import std.traits;
 import std.meta;
 import std.array : join;
@@ -90,23 +91,6 @@ template ObjcLinkObject(DClassObject) {
     }
 }
 
-/**
-    Creates a string parameter list
-*/
-string ObjcParamList(alias funcPtr)() {
-    alias fParameters = Parameters!funcPtr;
-    alias fParameterNames = ParameterIdentifierTuple!funcPtr;
-    import std.array : join;
-    import std.format : format;
-
-    string[] paramPairs;
-    static foreach(param; 0..fParameters.length) {
-        paramPairs ~= "%s %s".format(fParameters[param].stringof, fParameterNames[param]);
-    }
-
-    return "(%s)".format(paramPairs.join(", "));
-}
-
 /// Gets selector base name for method
 template ObjcSelectorBaseName(alias DObjectMember) {
     static if (hasUDA!(DObjectMember, selector))
@@ -143,6 +127,21 @@ enum ObjcMethodShouldOverride(DObject, alias DObjectMember) =
 enum ObjcReturnType(alias DObjectMember) = 
     (ReturnType!DObjectMember).stringof~" ";
 
+
+/**
+    Forwards DRTBindable types properly to arugments.
+*/
+template objc_forward(Args...) {
+    template fwd(alias arg) {
+        static if(is(typeof(arg) : DRTBindable))
+            @property auto fwd() => arg.self;
+        else
+            alias fwd = arg;
+    }
+
+    alias objc_forward = staticMap!(fwd, Args);
+}
+
 /// Link a single member
 template ObjcLinkMember(DObject, alias DObjectMember) {
     import std.string : format;
@@ -160,7 +159,7 @@ template ObjcLinkMember(DObject, alias DObjectMember) {
         @(__traits(getAttributes, DObjectMember))
         mixin(q{
             fReturnType %s(fParams) {
-                return this.message!fReturnType("%s", __traits(parameters));
+                return this.message!fReturnType("%s", objc_forward!(__traits(parameters)));
             }
         }.format(fName, fSelector));
     } else static if (__traits(isStaticFunction, DObjectMember)) {
@@ -170,7 +169,7 @@ template ObjcLinkMember(DObject, alias DObjectMember) {
         pragma(mangle, DObjectMember.mangleof)
         mixin(q{
             fReturnType %s(fParams) {
-                return DObject.message!fReturnType(cast(id)DObject.SELF_TYPE, "%s", __traits(parameters));
+                return DObject.message!fReturnType(cast(id)DObject.SELF_TYPE, "%s", objc_forward!(__traits(parameters)));
             }
         }.format(fName, fSelector));
     } else {
@@ -180,7 +179,7 @@ template ObjcLinkMember(DObject, alias DObjectMember) {
         pragma(mangle, DObjectMember.mangleof)
         mixin(q{
             fReturnType %s(fParams) {
-                return this.message!fReturnType("%s", __traits(parameters));
+                return this.message!fReturnType("%s", objc_forward!(__traits(parameters)));
             }
         }.format(fName, fSelector));
     }

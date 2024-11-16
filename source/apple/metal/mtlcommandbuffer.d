@@ -212,6 +212,22 @@ public:
     void addCompletedHandler(MTLCommandBufferHandler* block) @selector("addCompletedHandler:");
 
     /**
+        Presents the drawable onscreen as soon as possible.
+    */
+    void present(MTLDrawable drawable) @selector("presentDrawable:");
+
+    /**
+        Presents the drawable onscreen as soon as possible after a previous 
+        drawable is visible for the specified duration.
+    */
+    void present(MTLDrawable drawable, CFTimeInterval waitDuration) @selector("presentDrawable:afterMinimumDuration:");
+
+    /**
+        Presents the drawable onscreen at a specific host time.
+    */
+    void presentAt(MTLDrawable drawable, CFTimeInterval time) @selector("presentDrawable:atTime:");
+
+    /**
         Reserves the next available place for the command buffer in 
         its command queue.
     */

@@ -23,11 +23,11 @@ mixin LinkFramework!("Foundation");
 
 public import apple.foundation.nsbridge;
 
+public import apple.foundation.collections;
+public import apple.foundation.text;
+
 public import apple.foundation.nsobject;
-public import apple.foundation.nsstring;
-public import apple.foundation.nsarray;
 public import apple.foundation.nsvalue;
-public import apple.foundation.nsdictionary;
 public import apple.foundation.nstypes;
 public import apple.foundation.nsobject;
 public import apple.foundation.nserror;

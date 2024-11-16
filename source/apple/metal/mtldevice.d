@@ -579,7 +579,8 @@ public:
     /**
         Creates the system default device.
     */
-    static MTLDevice createSystemDefaultDevice() @objc_ignore {
+    @property @objc_ignore
+    static MTLDevice createSystemDefaultDevice() {
         return wrap!MTLDevice(MTLCreateSystemDefaultDevice());
     }
 
@@ -587,8 +588,9 @@ public:
         Returns an NSArray over all the MTLDevice instances
         in the system.
     */
-    static NSArray!MTLDevice allDevices() @objc_ignore {
-        return wrap!(NSArray!MTLDevice)(MTLCopyAllDevices());
+    @property @objc_ignore
+    static NSArray!MTLDevice allDevices() {
+        return MTLCopyAllDevices().get();
     }
 
     /**
@@ -675,9 +677,9 @@ public:
 /**
     Returns the device instance Metal selects as the default.
 */
-extern(C) id MTLCreateSystemDefaultDevice() @nogc nothrow;
+extern(C) idref!MTLDevice MTLCreateSystemDefaultDevice() @nogc nothrow;
 
 /**
     Returns an array of all the Metal device instances in the system.
 */
-extern(C) id MTLCopyAllDevices() @nogc nothrow;
+extern(C) idref!(NSArray!MTLDevice)* MTLCopyAllDevices() @nogc nothrow;

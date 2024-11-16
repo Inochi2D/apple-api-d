@@ -38,3 +38,4 @@ public import apple.metal.mtlrenderpass;
 public import apple.metal.mtlrenderpipeline;
 public import apple.metal.mtllibrary;
 public import apple.metal.mtlargument;
+public import apple.metal.mtldrawable;

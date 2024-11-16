@@ -312,9 +312,7 @@ public:
     /**
         Constructor.
     */
-    this(id ref_) {
-        super(ref_);
-    }
+    this(id ref_) { super(ref_); }
 
     // Link MTLTexture.
     mixin ObjcLink!("MTLTextureReferenceType");

@@ -21,7 +21,7 @@ mixin RequireAPIs!(Foundation, CoreFoundation, ObjC);
     A simple container for a single C or Objective-C data item.
 */
 @ObjectiveC
-class NSValue : NSObject {
+class NSValue : NSObject, NSCopying, NSSecureCoding {
 @nogc nothrow:
 public:
 

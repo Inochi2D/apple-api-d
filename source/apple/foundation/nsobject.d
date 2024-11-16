@@ -72,16 +72,6 @@ interface NSObjectProtocol {
         Returns an integer that can be used as a table address in a hash table structure.
     */
     @property NSUInteger hash();
-
-    /**
-        Increments the receiver’s reference count.
-    */
-    void retain() @selector("retain");
-
-    /**
-        Decrements the receiver’s reference count.
-    */
-    void release() @selector("release");
 }
 
 /**
@@ -131,26 +121,11 @@ public:
     this() { super(wrap(this.alloc().initialize())); }
     
     /**
-        Gets whether this object conforms to the specified prototype.
-    */
-    bool conformsTo(T)() if (isObjectiveCProtocol!T) {
-        return class_conformsToProtocol(this.getClass(), T.PROTOCOL);
-    }
-
-    /**
         Implements equality comparison
     */
     @objc_ignore
     bool opEquals(T)(T other) if (is(T : NSObject)) {
         return this.isEqual(other.self_);
-    }
-
-    /**
-        Creates a stack allocated wrapper for the object
-        that gets released when it goes out of scope.
-    */
-    auto autorelease() {
-        return DRTAutoRelease(this);
     }
 
     // Link NSObject.

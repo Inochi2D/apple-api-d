@@ -103,7 +103,6 @@ import core.stdc.config;
 struct Block(R = void, Params...) {
 @nogc nothrow:
 private:
-
     alias Invoke = extern(C) R function(Block*, Params);
 
     void* isa;
@@ -115,8 +114,7 @@ private:
     // Imported variables go here
     R delegate(Params) @nogc nothrow dg;
 
-    this(void* isa, int flags, Invoke invoke, R delegate(Params) @nogc nothrow dg)
-    {
+    this(void* isa, int flags, Invoke invoke, R delegate(Params) @nogc nothrow dg) {
         this.isa = isa;
         this.flags = flags;
         this.invoke = invoke;

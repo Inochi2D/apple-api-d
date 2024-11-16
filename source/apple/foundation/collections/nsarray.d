@@ -8,7 +8,7 @@
 /**
     Bindings to NSArray
 */
-module apple.foundation.nsarray;
+module apple.foundation.collections.nsarray;
 import apple.corefoundation;
 import apple.foundation;
 import apple.objc.rt;
@@ -24,7 +24,8 @@ private alias iter_i_func(T) = int delegate(size_t, T);
     A static ordered collection of objects.
 */
 @ObjectiveC @TollFreeBridged!CFArrayRef
-class NSArray(T) : NSObject if(is(T : DRTBindable) || is(T : id)) {
+class NSArray(T) : NSObject, NSCopying, NSMutableCopying, NSSecureCoding, NSFastEnumeration
+if(is(T : DRTBindable) || is(T : id)) {
 private:
 @nogc nothrow:
 public:

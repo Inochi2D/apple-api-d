@@ -138,8 +138,8 @@ public:
     /**
         The MTLTexture object for this attachment.
     */
-    @property MTLTexture texture();
-    @property void texture(MTLTexture);
+    @property @__strong MTLTexture texture();
+    @property void texture(@__strong MTLTexture);
 
     /**
         The mipmap level of the texture to be used for rendering.
@@ -417,6 +417,22 @@ public:
     */
     void set(MTLRenderPassColorAttachmentDescriptor attachment, NSUInteger attachmentIndex) @selector("setObject:atIndexedSubscript:");
 
+    /**
+        Gets the MTLRenderPassColorAttachmentDescriptor at the specified index.
+    */
+    @objc_ignore
+    MTLRenderPassColorAttachmentDescriptor opIndex(size_t index) {
+        return this.get(cast(NSUInteger)index);
+    }
+
+    /**
+        Sets the MTLRenderPassColorAttachmentDescriptor at the specified index.
+    */
+    @objc_ignore
+    void opIndexAssign(MTLRenderPassColorAttachmentDescriptor desc, size_t index) {
+        this.set(desc, cast(NSUInteger)index);
+    }
+
     // Link
     mixin ObjcLink!("MTLRenderPassColorAttachmentDescriptorArray");
 }
@@ -526,6 +542,11 @@ public:
         Base constructor
     */
     this(id self) { super(self); }
+
+    /**
+        Base constructor
+    */
+    this() { super(); }
 
     /**
         Configure the custom sample positions, to be used in MSAA rendering 

@@ -8,7 +8,7 @@
 /**
     Bindings to NSString
 */
-module apple.foundation.nsstring;
+module apple.foundation.text.nsstring;
 import apple.corefoundation;
 import apple.foundation;
 import apple.objc;

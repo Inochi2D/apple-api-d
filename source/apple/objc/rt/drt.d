@@ -18,12 +18,51 @@ import numem.core.memory;
 import apple.os;
 import core.stdc.math;
 import numem.core.memory;
+import numem.events;
 
 mixin RequireAPIs!(ObjC);
 
 @nogc nothrow:
 
-// TODO: Implement D type factory functions.
+/**
+    Wraps a foreign objective-c handle.
+
+    In debug mode will verify that the class matches the provided
+    D wrapper class type.
+*/
+T __from_foreign(T)(void* foreignHandle) if (is(T : DRTBindable)) {
+    any handle = cast(any)foreignHandle;
+
+    assert(id(handle).class_() == T.SELF_TYPE, "Foreign handle was not a "~T.stringof~"!");
+    return drt_wrap!T(id(handle));
+}
+
+/**
+    An ID which is wrapped to a D type.
+
+    This allows passing the ID around in blocks and the like.
+*/
+struct idref(T) {
+nothrow @nogc:
+public:
+    id ptr;
+    alias ptr this;
+
+    /**
+        Allows creating from D object
+    */
+    this(T obj_) { this.ptr = obj_.self; }
+
+    /**
+        Constructor
+    */
+    this(id self_) { this.ptr = self_; }
+
+    /**
+        Gets the wrapped class instance.
+    */
+    T get() => drt_wrap!T(this.ptr);
+}
 
 /**
     Base class implemented by all DRT bindable types.
@@ -55,6 +94,12 @@ protected:
     }
 
 public:
+
+    /**
+        A numem event called when the bindable has been released
+        from the Objective-C side.
+    */
+    Event!DRTBindable onReleased;
 
     /**
         Gets the handle of the association for this objective-c class.
@@ -98,25 +143,26 @@ public:
         Called when the DRT type is being destroyed.
     */
     @objc_ignore
-    void notifyDealloc(id byWhom) { 
-        this.self_ = null;
+    void notifyDealloc(id byWhom) {
 
-        // This won't free other instances!
-        DRTBindable self = this;
-        nogc_delete(self);
+        // onReleased can only throw NuException
+        // so we can safely assume that `ex` is NuException.
+        try { this.onReleased(this); } catch(Exception ex) { nogc_delete(ex); } 
+        
+        this.self_ = null;
     }
 
     /**
         Retain
     */
     @objc_ignore
-    abstract void retain();
+    final void retain() { self_.retain(); }
 
     /**
         Release
     */
     @objc_ignore
-    abstract void release();
+    final void release() { self_.release(); }
 
     /**
         Sends a message (calls a function) based on the given selector.
@@ -154,27 +200,32 @@ public:
     A struct which wraps an DRTBindable type and calls the
     retain and release functions automatically.
 */
-struct DRTAutoRelease {
+struct DRTAutoRelease(T) if (is(T : DRTBindable)) {
 nothrow @nogc:
-private:
-    size_t depth = 0;
 public:
-    DRTBindable bindable;
-    alias bindable this;
+    T self_;
+    alias self_ this;
 
     ~this() {
-        if (depth > 0)
-            bindable.release();
+        this.self_.release();
     }
 
+    // Postblit
     this(this) {
-        bindable.retain();
-        this.depth++;
+        this.self_.retain();
     }
 
-    this(DRTBindable bindable) {
-        this.bindable = bindable;
+    // Constructor
+    this(T self_) {
+        this.self_ = self_;
     }
+}
+
+/**
+    Returns an autorelease version of `self_`.
+*/
+DRTAutoRelease!T autorelease(T)(T self_) if (is(T : DRTBindable)) {
+    return DRTAutoRelease!T(self_);
 }
 
 /**
@@ -286,7 +337,10 @@ id _drt_get_wrap_obj(id ref_) {
     Sets the wrapper object
 */
 void _drt_set_wrap_obj(id ref_, id wrap_) {
-    ref_.associate(_DRT_GLUEASSOC_KEY, wrap_, objc_AssociationPolicy.OBJC_ASSOCIATION_ASSIGN | objc_AssociationPolicy.OBJC_ASSOCIATION_RETAIN);
+    ref_.associate(_DRT_GLUEASSOC_KEY, wrap_, 
+        objc_AssociationPolicy.OBJC_ASSOCIATION_ASSIGN | 
+        objc_AssociationPolicy.OBJC_ASSOCIATION_RETAIN
+    );
 }
 
 /**
@@ -389,13 +443,11 @@ extern(C) void __drt_dealloc(id self, SEL _cmd) {
     if (auto _this = _drt_get_bindable(self)) {
         // Unwrap first
         __drt_unwrap(self, _DRT_unwrap);
-
-        // Then dealloc
         _this.notifyDealloc(self);
+        nogc_delete(_this);
     }
 
-    // Call super-class dealloc function.
-    self.send!void(self.superclass, "dealloc");
+    self.send!void(self.superclass(), "dealloc");
 }
 
 pragma(mangle, "DRT_CLASS_$_DRT")

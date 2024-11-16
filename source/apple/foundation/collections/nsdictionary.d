@@ -8,7 +8,7 @@
 /**
     Bindings to NSDictionary
 */
-module apple.foundation.nsdictionary;
+module apple.foundation.collections.nsdictionary;
 import apple.corefoundation;
 import apple.foundation;
 import apple.objc;
@@ -21,7 +21,8 @@ mixin RequireAPIs!(Foundation, CoreFoundation, ObjC);
     NSDictionary
 */
 @ObjectiveC @TollFreeBridged!CFDictionaryRef
-class NSDictionary(Key, Value) : NSObject if(is(Key : DRTBindable) && (is(Value : DRTBindable) || is(Value == id))) {
+class NSDictionary(Key, Value) : NSObject, NSCopying, NSFastEnumeration, NSMutableCopying, NSSecureCoding
+if(is(Key : DRTBindable) && (is(Value : DRTBindable) || is(Value == id))) {
 @nogc nothrow:
 public:
 

@@ -10,6 +10,7 @@
 */
 module apple.objc.rt.base;
 import apple.objc.rt.abi;
+import apple.objc.rt.drt;
 import apple.objc.block;
 import apple.os;
 
@@ -603,6 +604,8 @@ public:
 
 /**
     A pointer to an instance of a class.
+
+    The id *may* be wrapped to a D type.
 */
 struct id {
 nothrow @nogc:
@@ -642,6 +645,11 @@ public:
     @property const(char)* name() => object_getClassName(this);
 
     /**
+        Gets whether the object is uniquely referenced.
+    */
+    @property bool isUniquelyReferenced() => objc_isUniquelyReferenced(this);
+
+    /**
         Returns a copy of a given object. 
     */
     id copy(size_t extraSize=0) {
@@ -662,11 +670,8 @@ public:
         superclass of an instance of a class.
     */
     T send(T, Args...)(Class superclass, SEL selector, Args args) {
-        objc_super supercall = {
-            reciever: this,
-            superClass: superclass
-        };
-        return _d_objc_msgSendSuper!T(&supercall, selector, args);
+        objc_super super_ = { reciever: this, superClass: superclass };
+        return _d_objc_msgSendSuper!T(&super_, selector, args);
     }
     T send(T, Args...)(Class superclass, const(char)* selector, Args args) => 
         this.send!T(superclass, SEL.get(selector), args);
@@ -720,6 +725,27 @@ public:
     */
     id storeWeak(id* location) {
         return objc_storeWeak(location, this);
+    }
+
+    /**
+        Adds a reference
+    */
+    id retain() {
+        return objc_retain(this);
+    }
+
+    /**
+        Removes a reference
+    */
+    void release() {
+        objc_release(this);
+    }
+
+    /**
+        Automatically release at the end of an auto-release pool.
+    */
+    id autorelease() {
+        return objc_autorelease(this);
     }
 
     /**
@@ -850,6 +876,12 @@ private {
     extern const(char)* object_getClassName(id obj);
     extern Class object_getClass(id obj);
     extern Class object_setClass(id obj, Class cls);
+
+    // ARC
+    extern id objc_retain(id obj);
+    extern void objc_release(id obj);
+    extern id objc_autorelease(id obj);
+    extern bool objc_isUniquelyReferenced(id obj);
 
     // Obtaining Class Definitions
     extern int objc_getClassList(Class* buffer, int bufferCount);
@@ -1032,7 +1064,7 @@ private {
         } else {
 
             // AArch64 uses msgSend in all cases.
-            return (cast(fn)&objc_msgSend)(instance, selector, args);
+            return (cast(fn)&objc_msgSendSuper)(instance, selector, args);
         }
     }
 
