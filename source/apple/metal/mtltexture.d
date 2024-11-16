@@ -50,12 +50,6 @@ struct MTLTextureSwizzleChannels {
     MTLTextureSwizzle alpha;
 }
 
-// TODO:
-// @ObjectiveC
-// class MTLSharedTextureHandle : NSSecureCoding {
-
-// }
-
 enum MTLTextureUsage : NSUInteger {
     Unknown = 0,
     ShaderRead = 1,
@@ -305,14 +299,79 @@ public:
     @property MTLBuffer buffer() const;
 
     /**
+        The offset in the source buffer where the texture’s data comes from.
+    */
+    @property NSUInteger bufferOffset() const;
+
+    /**
+        The number of bytes in each row of the texture’s source buffer.
+    */
+    @property NSUInteger bufferBytesPerRow() const;
+
+    /**
         The type of compression to use for the texture
     */
     @property MTLTextureCompressionType compressionType() const;
 
     /**
+        A Boolean value that indicates whether this is a sparse texture.
+    */
+    @property bool isSparse() const;
+
+    /**
+        The index of the first mipmap in the tail.
+    */
+    @property NSUInteger firstMipmapInTail() const;
+
+    /**
+        The size of the sparse texture tail, in bytes.
+    */
+    @property NSUInteger tailSizeInBytes() const;
+
+    /**
+        The GPU resource ID.
+    */
+    @property MTLResourceID gpuResourceID() const;
+
+    /**
+        Creates a new texture handle from a shareable texture.
+    */
+    MTLSharedTextureHandle newSharedTextureHandle() @selector("newSharedTextureHandle");
+
+    /**
+        The texture on another GPU that the texture was created from, if any.
+    */
+    @property MTLTexture remoteStorageTexture() const;
+
+    /**
+        Creates a remote texture view for another GPU in the same peer group.
+    */
+    MTLTexture newRemoteTextureView(MTLDevice device) @selector("newRemoteTextureViewForDevice:");
+
+    /**
         Constructor.
     */
     this(id ref_) { super(ref_); }
+
+    /**
+        Copies pixel data into a section of a texture slice.
+    */
+    void replace(MTLRegion region, NSUInteger level, NSUInteger slice, const(void)* pixels, NSUInteger bytesPerRow, NSUInteger bytesPerImage) @selector("replaceRegion:mipmapLevel:slice:withBytes:bytesPerRow:bytesPerImage:");
+
+    /**
+        Copies a block of pixels into a section of texture slice 0.
+    */
+    void replace(MTLRegion region, NSUInteger level, const(void)* pixels, NSUInteger bytesPerRow) @selector("replaceRegion:mipmapLevel:withBytes:bytesPerRow:");
+
+    /**
+        Copies pixel data from the texture to a buffer in system memory.
+    */
+    void getBytes(void* destination, NSUInteger bytesPerRow, NSUInteger bytesPerImage, MTLRegion region, NSUInteger level, NSUInteger slice) @selector("getBytes:bytesPerRow:bytesPerImage:fromRegion:mipmapLevel:slice:");
+
+    /**
+        Copies pixel data from the first slice of the texture to a buffer in system memory.
+    */
+    void getBytes(void* destination, NSUInteger bytesPerRow, MTLRegion region, NSUInteger level) @selector("getBytes:bytesPerRow:fromRegion:mipmapLevel:");
 
     // Link MTLTexture.
     mixin ObjcLink!("MTLTextureReferenceType");
@@ -329,7 +388,7 @@ public:
     the device property of the MTLSharedTextureHandle object.
 */
 @ObjectiveC
-class MTLSharedTextureHandle : NSObject {
+class MTLSharedTextureHandle : NSObject, NSSecureCoding {
 @nogc nothrow:
 public:
 
