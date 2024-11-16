@@ -80,14 +80,6 @@ public:
     */
     void insert(NSString other, NSUInteger index) @selector("insertString:atIndex:");
 
-    /**
-        Replaces the characters of the string with those in a given string.
-    */
-    auto opAssign(NSString toSet) {
-        this.message!void("setString:", toSet);
-        return this;
-    }
-
     // Link NSMutableString.
     mixin ObjcLink;
 }

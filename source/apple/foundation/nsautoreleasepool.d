@@ -18,9 +18,6 @@ mixin RequireAPIs!(ObjC);
 import apple.objc;
 import apple.objc : selector;
 
-import numem.core.memory;
-import numem.core.memory.alloc : assumeNoGC;
-
 @nogc:
 
 /**
@@ -59,16 +56,4 @@ public:
 
     // Link NSAutoreleasePool.
     mixin ObjcLink;
-}
-
-/**
-    Creates an auto-release pool scope with the given delegate.
-*/
-void autoreleasepool(scope void delegate() scope_) {
-    auto scope_fn = assumeNoGC!(typeof(scope_))(scope_);
-
-    NSAutoreleasePool pool = nogc_new!NSAutoreleasePool();
-    scope(exit) pool.drain();
-
-    scope_fn();
 }

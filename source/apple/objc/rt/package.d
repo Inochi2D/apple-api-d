@@ -15,5 +15,6 @@ public import apple.objc.rt.base;
 public import apple.objc.rt.bind;
 public import apple.objc.rt.drt;
 public import apple.objc.rt.meta;
+public import apple.objc.rt.autorelease;
 
 alias selector = apple.objc.rt.meta.selector;

@@ -15,6 +15,7 @@ import apple.objc.block;
 import apple.os;
 
 import apple.objc : ObjC;
+
 mixin RequireAPIs!(ObjC);
 
 public import core.stdc.stdlib : free;
@@ -27,12 +28,12 @@ import apple.objc.rt.meta;
     It specifies the class definition of the particular superclass that should be messaged.
 */
 struct objc_super {
-    
+
     /**
         Specifies an instance of a class.
     */
     id reciever;
-    
+
     /**
         Specifies the particular superclass of the instance to message.
     */
@@ -53,12 +54,12 @@ struct objc_method_description_t {
 }
 
 struct objc_property_attribute_t {
-    
+
     /**
         The name of the attribute.
     */
     const(char)* name;
-    
+
     /**
         The value of the attribute (usually empty).
     */
@@ -69,12 +70,13 @@ struct objc_property_attribute_t {
     Type to specify the behavior of an association.
 */
 enum objc_AssociationPolicy : size_t {
-    OBJC_ASSOCIATION_ASSIGN             = 0,
-    OBJC_ASSOCIATION_COPY               = 1403,
-    OBJC_ASSOCIATION_COPY_NONATOMIC     = 3,
-    OBJC_ASSOCIATION_RETAIN             = 1401,
-    OBJC_ASSOCIATION_RETAIN_NONATOMIC   = 1
+    OBJC_ASSOCIATION_ASSIGN = 0,
+    OBJC_ASSOCIATION_COPY = 1403,
+    OBJC_ASSOCIATION_COPY_NONATOMIC = 3,
+    OBJC_ASSOCIATION_RETAIN = 1401,
+    OBJC_ASSOCIATION_RETAIN_NONATOMIC = 1
 }
+
 
 /**
     Base opaque type handle
@@ -99,7 +101,8 @@ public:
     /**
         Creates a new class and metaclass.
     */
-    static Class allocateClassPair(Class superclass, const(char)* name, size_t extraBytes) => objc_allocateClassPair(superclass, name, extraBytes);
+    static Class allocateClassPair(Class superclass, const(char)* name, size_t extraBytes) => objc_allocateClassPair(
+        superclass, name, extraBytes);
 
     /**
         Returns the class definition of a specified class.
@@ -119,7 +122,7 @@ public:
     */
     static Class[] classList() {
         uint classCount;
-        return objc_copyClassList(&classCount)[0..classCount];
+        return objc_copyClassList(&classCount)[0 .. classCount];
     }
 
     /**
@@ -147,7 +150,7 @@ public:
         Returns a Boolean value that indicates whether a class object is a metaclass.
     */
     @property bool isMetaClass() => class_isMetaClass(this);
-    
+
     /**
         Returns the size of instances of a class.
     */
@@ -162,7 +165,7 @@ public:
     @property Ivar[] ivars() {
         uint ivarCount;
         auto ivars = class_copyIvarList(this, &ivarCount);
-        return ivars[0..ivarCount];
+        return ivars[0 .. ivarCount];
     }
 
     /**
@@ -174,7 +177,7 @@ public:
     @property objc_property_t[] properties() {
         uint propCount;
         auto props = class_copyPropertyList(this, &propCount);
-        return props[0..propCount];
+        return props[0 .. propCount];
     }
 
     /**
@@ -186,7 +189,7 @@ public:
     @property Method[] methods() {
         uint methodCount;
         auto methods = class_copyMethodList(this, &methodCount);
-        return methods[0..methodCount];
+        return methods[0 .. methodCount];
     }
 
     /**
@@ -198,7 +201,7 @@ public:
     @property Protocol[] protocols() {
         uint protoCount;
         auto protos = class_copyProtocolList(this, &protoCount);
-        return protos[0..protoCount];
+        return protos[0 .. protoCount];
     }
 
     /**
@@ -253,7 +256,8 @@ public:
         message were sent to an instance of a class.
     */
     IMP getMethodImplementation(ReturnType)(SEL name) {
-        version(AArch64) return class_getMethodImplementation(this, name);
+        version (AArch64)
+            return class_getMethodImplementation(this, name);
         else {
             static if (is(ReturnType == struct))
                 return class_getMethodImplementation_stret(this, name);
@@ -268,6 +272,7 @@ public:
     T send(T, Args...)(SEL selector, Args args) {
         return _d_objc_msgSend!T(ptr, selector, args);
     }
+
     T send(T, Args...)(const(char)* selector, Args args) => this.send!T(SEL.get(selector), args);
 
     /**
@@ -283,15 +288,17 @@ public:
     bool addProperty(const(char)* name, const(objc_property_attribute_t)* attributes, uint attributeCount) {
         return class_addProperty(this, name, attributes, attributeCount);
     }
-    bool addProperty(const(char)* name, const(objc_property_attribute_t)[] attributes) => this.addProperty(name, attributes.ptr, cast(uint)attributes.length);
+
+    bool addProperty(const(char)* name, const(objc_property_attribute_t)[] attributes) => this.addProperty(name, attributes
+            .ptr, cast(uint) attributes.length);
 
     /**
         Replaces a property of a class.
     */
     void replaceProperty(const(char)* name, const(objc_property_attribute_t)* attributes, uint attributeCount) =>
         class_replaceProperty(this, name, attributes, attributeCount);
-    void replaceProperty(const(char)* name, const(objc_property_attribute_t)[] attributes) => 
-        class_replaceProperty(this, name, attributes.ptr, cast(uint)attributes.length);
+    void replaceProperty(const(char)* name, const(objc_property_attribute_t)[] attributes) =>
+        class_replaceProperty(this, name, attributes.ptr, cast(uint) attributes.length);
 
     /**
         Adds a new method to a class with a given name and implementation.
@@ -339,7 +346,7 @@ public:
         Creates an instance of a class, allocating memory for the class 
         in the default malloc memory zone.
     */
-    id create(size_t extraBytes=0) {
+    id create(size_t extraBytes = 0) {
         return class_createInstance(this, extraBytes);
     }
 
@@ -416,7 +423,7 @@ public:
     */
     static @property Protocol[] all() {
         uint protoCount;
-        return objc_copyProtocolList(&protoCount)[0..protoCount];
+        return objc_copyProtocolList(&protoCount)[0 .. protoCount];
     }
 
     /**
@@ -433,7 +440,7 @@ public:
     @property objc_property_t[] properties() {
         uint propCount;
         auto props = protocol_copyPropertyList(this, &propCount);
-        return props[0..propCount];
+        return props[0 .. propCount];
     }
 
     /**
@@ -447,6 +454,7 @@ public:
     T send(T, Args...)(SEL selector, Args args) {
         return _d_objc_msgSend!T(ptr, selector, args);
     }
+
     T send(T, Args...)(const(char)* selector, Args args) => this.send!T(SEL.get(selector), args);
 
     /**
@@ -474,8 +482,8 @@ public:
     */
     void addProperty(const(char)* types, const(objc_property_attribute_t)* attributes, uint attributeCount, bool isRequiredProperty, bool isInstanceProperty) =>
         protocol_addProperty(this, name, attributes, attributeCount, isRequiredProperty, isInstanceProperty);
-    void addProperty(const(char)* types, const(objc_property_attribute_t)[] attributes, bool isRequiredMethod, bool isInstanceMethod) => 
-        protocol_addProperty(this, name, attributes.ptr, cast(uint)attributes.length, isRequiredMethod, isInstanceMethod);
+    void addProperty(const(char)* types, const(objc_property_attribute_t)[] attributes, bool isRequiredMethod, bool isInstanceMethod) =>
+        protocol_addProperty(this, name, attributes.ptr, cast(uint) attributes.length, isRequiredMethod, isInstanceMethod);
 
     /**
         Returns the specified property of a given protocol.
@@ -495,7 +503,8 @@ public:
     /**
         Returns a Boolean value that indicates whether two protocols are equal.
     */
-    bool opEquals(const(Protocol) other) const => protocol_isEqual(cast(Protocol)this, cast(Protocol)other);
+    bool opEquals(const(Protocol) other) const => protocol_isEqual(cast(Protocol) this, cast(
+            Protocol) other);
 }
 
 /**
@@ -644,7 +653,7 @@ public:
     /**
         Returns a pointer to any extra bytes allocated with a instance given object.
     */
-    @property void* indexedIvars() =>  object_getIndexedIvars(this);
+    @property void* indexedIvars() => object_getIndexedIvars(this);
 
     /**
         Returns the class name of a given object.
@@ -659,8 +668,8 @@ public:
     /**
         Returns a copy of a given object. 
     */
-    id copy(size_t extraSize=0) {
-        return object_copy(this, this.class_.instanceSize()+extraSize);
+    id copy(size_t extraSize = 0) {
+        return object_copy(this, this.class_.instanceSize() + extraSize);
     }
 
     /**
@@ -669,7 +678,8 @@ public:
     T send(T, Args...)(SEL selector, Args args) {
         return _d_objc_msgSend!T(ptr, selector, args);
     }
-    T send(T, Args...)(const(char)* selector, Args args) => 
+
+    T send(T, Args...)(const(char)* selector, Args args) =>
         this.send!T(SEL.get(selector), args);
 
     /**
@@ -677,10 +687,11 @@ public:
         superclass of an instance of a class.
     */
     T send(T, Args...)(Class superclass, SEL selector, Args args) {
-        objc_super super_ = { reciever: this, superClass: superclass };
+        objc_super super_ = {reciever: this, superClass: superclass};
         return _d_objc_msgSendSuper!T(&super_, selector, args);
     }
-    T send(T, Args...)(Class superclass, const(char)* selector, Args args) => 
+
+    T send(T, Args...)(Class superclass, const(char)* selector, Args args) =>
         this.send!T(superclass, SEL.get(selector), args);
 
     /**
@@ -701,7 +712,8 @@ public:
         Removes an associated value for a given object using a given key. 
     */
     void disassociate(const(void)* key) {
-        objc_setAssociatedObject(this, key, id(null), objc_AssociationPolicy.OBJC_ASSOCIATION_ASSIGN);
+        objc_setAssociatedObject(this, key, id(null), objc_AssociationPolicy
+                .OBJC_ASSOCIATION_ASSIGN);
     }
 
     /**
@@ -724,7 +736,7 @@ public:
         Changes the value of an instance variable of a class instance.
     */
     void setVariable(T)(const(char)* name, T value) {
-        object_setInstanceVariable(this, name, cast(void*)value); // @suppress(dscanner.unused_result)
+        object_setInstanceVariable(this, name, cast(void*) value); // @suppress(dscanner.unused_result)
     }
 
     /**
@@ -792,7 +804,7 @@ public:
         maps the method name to a selector, 
         and returns the selector value.
     */
-    static SEL register(const(char)* name) => sel_registerName(name); 
+    static SEL register(const(char)* name) => sel_registerName(name);
     static SEL get(const(char)* name) => sel_getUid(name);
 
     /**
@@ -803,13 +815,13 @@ public:
     /**
         Returns a Boolean value that indicates whether two selectors are equal.
     */
-    bool opEquals(const(SEL) other) const => sel_isEqual(cast(SEL)this, cast(SEL)other);
+    bool opEquals(const(SEL) other) const => sel_isEqual(cast(SEL) this, cast(SEL) other);
 }
 
 /**
     A pointer to the start of a method implementation.
 */
-alias IMP = extern(C) id function(id, SEL, ...) @nogc nothrow;
+alias IMP = extern (C) id function(id, SEL, ...) @nogc nothrow;
 
 /**
     Disassociates a block from an IMP that was created using `fromBlock`
@@ -826,300 +838,302 @@ IMP fromBlock(BlockT)(BlockT block) if (is(BlockT == Block!(id, Params), Params.
     return imp_implementationWithBlock(cast(void*)&block);
 }
 
-static if (OBJC_ABI >= 0):
-extern(C) @nogc nothrow:
+static if (OBJC_ABI >= 0)
+     : extern (C) @nogc nothrow:
 
+    private {
 
-private {
+        // Working with Classes
+        // NOTE: Platform implementation differs
+        // SEE: https://github.com/opensource-apple/objc4/blob/master/runtime/message.h
+        extern const(char)* class_getName(Class cls);
+        extern Class class_getSuperclass(Class cls);
+        extern bool class_isMetaClass(Class cls);
+        extern size_t class_getInstanceSize(Class cls);
+        extern Ivar class_getInstanceVariable(Class cls, const(char)* name);
+        extern Ivar class_getClassVariable(Class cls, const(char)* name);
+        extern bool class_addIvar(Class cls, const(char)* name, int size, ubyte alignment, const(
+                char)* types);
+        extern Ivar* class_copyIvarList(Class cls, uint* outCount);
+        extern const(ubyte)* class_getIvarLayout(Class cls);
+        extern void class_setIvarLayout(Class cls, const(ubyte)* layout);
+        extern const(ubyte)* class_getWeakIvarLayout(Class cls);
+        extern void class_setWeakIvarLayout(Class cls, const(ubyte)* layout);
+        extern objc_property_t class_getProperty(Class cls, const(char)* name);
+        extern objc_property_t* class_copyPropertyList(Class cls, uint* outCount);
+        extern bool class_addMethod(Class cls, SEL name, IMP imp, const(char)* types);
+        extern Method class_getInstanceMethod(Class cls, SEL name);
+        extern Method class_getClassMethod(Class cls, SEL name);
+        extern Method* class_copyMethodList(Class cls, uint* outCount);
+        extern IMP class_replaceMethod(Class cls, SEL name, IMP imp, const(char)* types);
+        extern IMP class_getMethodImplementation(Class cls, SEL name);
+        version (AArch64) {
+        } else
+            extern IMP class_getMethodImplementation_stret(Class cls, SEL name);
+        extern bool class_respondsToSelector(Class cls, SEL sel);
+        extern bool class_addProtocol(Class cls, Protocol protocol);
+        extern bool class_addProperty(Class cls, const(char)* name, const(objc_property_attribute_t)* attributes, uint attributeCount);
+        extern void class_replaceProperty(Class cls, const(char)* name, const(
+                objc_property_attribute_t)* attributes, uint attributeCount);
+        extern bool class_conformsToProtocol(Class cls, Protocol protocol);
+        extern Protocol* class_copyProtocolList(Class cls, uint* outCount);
+        extern int class_getVersion(Class cls);
+        extern void class_setVersion(Class cls, int version_);
+        extern Class objc_getFutureClass(const(char)* name);
+        extern void objc_setFutureClass(Class cls, const(char)* name);
 
-    // Working with Classes
-    // NOTE: Platform implementation differs
-    // SEE: https://github.com/opensource-apple/objc4/blob/master/runtime/message.h
-    extern const(char)* class_getName(Class cls);
-    extern Class class_getSuperclass(Class cls);
-    extern bool class_isMetaClass(Class cls);
-    extern size_t class_getInstanceSize(Class cls);
-    extern Ivar class_getInstanceVariable(Class cls, const(char)* name);
-    extern Ivar class_getClassVariable(Class cls, const(char)* name);
-    extern bool class_addIvar(Class cls, const(char)* name, int size, ubyte alignment, const(char)* types);
-    extern Ivar* class_copyIvarList(Class cls, uint* outCount);
-    extern const(ubyte)* class_getIvarLayout(Class cls);
-    extern void class_setIvarLayout(Class cls, const(ubyte)* layout);
-    extern const(ubyte)* class_getWeakIvarLayout(Class cls);
-    extern void class_setWeakIvarLayout(Class cls, const(ubyte)* layout);
-    extern objc_property_t class_getProperty(Class cls, const(char)* name);
-    extern objc_property_t* class_copyPropertyList(Class cls, uint* outCount);
-    extern bool class_addMethod(Class cls, SEL name, IMP imp, const(char)* types);
-    extern Method class_getInstanceMethod(Class cls, SEL name);
-    extern Method class_getClassMethod(Class cls, SEL name);
-    extern Method* class_copyMethodList(Class cls, uint* outCount);
-    extern IMP class_replaceMethod(Class cls, SEL name, IMP imp, const(char)* types);
-    extern IMP class_getMethodImplementation(Class cls, SEL name);
-    version(AArch64) {}
-    else extern IMP class_getMethodImplementation_stret(Class cls, SEL name);
-    extern bool class_respondsToSelector(Class cls, SEL sel);
-    extern bool class_addProtocol(Class cls, Protocol protocol);
-    extern bool class_addProperty(Class cls, const(char)* name, const(objc_property_attribute_t)* attributes, uint attributeCount);
-    extern void class_replaceProperty(Class cls, const(char)* name, const(objc_property_attribute_t)* attributes, uint attributeCount);
-    extern bool class_conformsToProtocol(Class cls, Protocol protocol);
-    extern Protocol* class_copyProtocolList(Class cls, uint *outCount);
-    extern int class_getVersion(Class cls);
-    extern void class_setVersion(Class cls, int version_);
-    extern Class objc_getFutureClass(const(char)* name);
-    extern void objc_setFutureClass(Class cls, const(char)* name);
+        // Adding Classes
+        extern Class objc_allocateClassPair(Class superclass, const(char)* name, size_t extraBytes);
+        extern void objc_disposeClassPair(Class cls);
+        extern void objc_registerClassPair(Class cls);
+        extern Class objc_duplicateClass(Class original, const(char)* name, size_t extraBytes);
 
-    // Adding Classes
-    extern Class objc_allocateClassPair(Class superclass, const(char)* name, size_t extraBytes);
-    extern void objc_disposeClassPair(Class cls);
-    extern void objc_registerClassPair(Class cls);
-    extern Class objc_duplicateClass(Class original, const(char)* name, size_t extraBytes);
+        // Instantiating Classes
+        extern id class_createInstance(Class cls, size_t extraBytes);
+        extern id objc_constructInstance(Class cls, void* bytes);
+        extern void* objc_destructInstance(id obj);
 
-    // Instantiating Classes
-    extern id class_createInstance(Class cls, size_t extraBytes);
-    extern id objc_constructInstance(Class cls, void* bytes);
-    extern void* objc_destructInstance(id obj);
+        // Working with Instances
+        extern id object_copy(id obj, size_t size);
+        extern id object_dispose(id obj);
+        extern Ivar object_setInstanceVariable(id obj, const(char)* name, void* value);
+        extern Ivar object_getInstanceVariable(id obj, const(char)* name, void** outValue);
+        extern void* object_getIndexedIvars(id obj);
+        extern id object_getIvar(id obj, Ivar ivar);
+        extern void object_setIvar(id obj, Ivar ivar, id value);
+        extern const(char)* object_getClassName(id obj);
+        extern Class object_getClass(id obj);
+        extern Class object_setClass(id obj, Class cls);
 
-    // Working with Instances
-    extern id object_copy(id obj, size_t size);
-    extern id object_dispose(id obj);
-    extern Ivar object_setInstanceVariable(id obj, const(char)* name, void* value);
-    extern Ivar object_getInstanceVariable(id obj, const(char)* name, void** outValue);
-    extern void* object_getIndexedIvars(id obj);
-    extern id object_getIvar(id obj, Ivar ivar);
-    extern void object_setIvar(id obj, Ivar ivar, id value);
-    extern const(char)* object_getClassName(id obj);
-    extern Class object_getClass(id obj);
-    extern Class object_setClass(id obj, Class cls);
+        // ARC
+        extern id objc_retain(id obj);
+        extern void objc_release(id obj);
+        extern id objc_autorelease(id obj);
+        extern bool objc_isUniquelyReferenced(id obj);
 
-    // ARC
-    extern id objc_retain(id obj);
-    extern void objc_release(id obj);
-    extern id objc_autorelease(id obj);
-    extern bool objc_isUniquelyReferenced(id obj);
+        // Obtaining Class Definitions
+        extern int objc_getClassList(Class* buffer, int bufferCount);
+        extern Class* objc_copyClassList(uint* outCount);
+        extern Class objc_lookUpClass(const(char)* name);
+        extern id objc_getClass(const(char)* name);
+        extern id objc_getMetaClass(const(char)* name);
 
-    // Obtaining Class Definitions
-    extern int objc_getClassList(Class* buffer, int bufferCount);
-    extern Class* objc_copyClassList(uint* outCount);
-    extern Class objc_lookUpClass(const(char)* name);
-    extern id objc_getClass(const(char)* name);
-    extern id objc_getMetaClass(const(char)* name);
+        // Working with Instance Variables
+        extern const(char)* ivar_getName(Ivar v);
+        extern const(char)* ivar_getTypeEncoding(Ivar v);
+        extern ptrdiff_t ivar_getOffset(Ivar v);
 
-    // Working with Instance Variables
-    extern const(char)* ivar_getName(Ivar v);
-    extern const(char)* ivar_getTypeEncoding(Ivar v);
-    extern ptrdiff_t ivar_getOffset(Ivar v);
+        // Associative References
+        extern void objc_setAssociatedObject(id object, const(void)* key, id value, objc_AssociationPolicy policy);
+        extern id objc_getAssociatedObject(id object, const(void)* key);
+        extern void objc_removeAssociatedObjects(id object);
 
-    // Associative References
-    extern void objc_setAssociatedObject(id object, const(void)* key, id value, objc_AssociationPolicy policy);
-    extern id objc_getAssociatedObject(id object, const(void)* key);
-    extern void objc_removeAssociatedObjects(id object);
+        // Sending Messages
+        // NOTE: Platform implementation differs
+        // SEE: https://github.com/opensource-apple/objc4/blob/master/runtime/message.h#L118
+        extern void objc_msgSend(id instance, SEL, ...);
+        extern void objc_msgSendSuper(objc_super* super_, SEL, ...);
+        version (ARM) extern void objc_msgSend_stret(void* returnObject, id instance, SEL, ...);
+        version (ARM) extern void objc_msgSendSuper_stret(objc_super* super_, SEL, ...);
+        version (X86) extern void objc_msgSend_stret(void* returnObject, id instance, SEL, ...);
+        version (X86) extern void objc_msgSendSuper_stret(objc_super* super_, SEL, ...);
+        version (X86) extern void objc_msgSend_fpret(id instance, SEL, ...);
+        version (X86_64) extern void objc_msgSend_fpret(id instance, SEL, ...);
+        version (X86_64) extern void objc_msgSend_fp2ret(id instance, SEL, ...);
+        version (X86_64) extern void objc_msgSend_stret(void* returnObject, id instance, SEL, ...);
+        version (X86_64) extern void objc_msgSendSuper_stret(objc_super* super_, SEL, ...);
 
-    // Sending Messages
-    // NOTE: Platform implementation differs
-    // SEE: https://github.com/opensource-apple/objc4/blob/master/runtime/message.h#L118
-    extern void objc_msgSend(id instance, SEL, ...);
-    extern void objc_msgSendSuper(objc_super* super_, SEL, ...);
-    version(ARM) extern void objc_msgSend_stret(void* returnObject, id instance, SEL, ...);
-    version(ARM) extern void objc_msgSendSuper_stret(objc_super* super_, SEL, ...);
-    version(X86) extern void objc_msgSend_stret(void* returnObject, id instance, SEL, ...);
-    version(X86) extern void objc_msgSendSuper_stret(objc_super* super_, SEL, ...);
-    version(X86) extern void objc_msgSend_fpret(id instance, SEL, ...);
-    version(X86_64) extern void objc_msgSend_fpret(id instance, SEL, ...);
-    version(X86_64) extern void objc_msgSend_fp2ret(id instance, SEL, ...);
-    version(X86_64) extern void objc_msgSend_stret(void* returnObject, id instance, SEL, ...);
-    version(X86_64) extern void objc_msgSendSuper_stret(objc_super* super_, SEL, ...);
+        // Working with Methods
+        // NOTE: Platform implementation differs
+        // SEE: https://github.com/opensource-apple/objc4/blob/master/runtime/message.h#L232
+        extern void method_invoke(id receiver, Method method, ...);
+        version (ARM) extern void method_invoke_stret(id receiver, Method method, ...);
+        version (X86) extern void method_invoke_stret(id receiver, Method method, ...);
+        version (X86_64) extern void method_invoke_stret(id receiver, Method method, ...);
+        extern SEL method_getName(Method m);
+        extern IMP method_getImplementation(Method m);
+        extern const(char)* method_getTypeEncoding(Method m);
+        extern char* method_copyReturnType(Method m);
+        extern char* method_copyArgumentType(Method m, uint index);
+        extern void method_getReturnType(Method m, char* dst, size_t dst_len);
+        extern uint method_getNumberOfArguments(Method m);
+        extern objc_method_description_t* method_getDescription(Method m);
+        extern IMP method_setImplementation(Method m, IMP imp);
+        extern void method_exchangeImplementations(Method m1, Method m2);
 
-    // Working with Methods
-    // NOTE: Platform implementation differs
-    // SEE: https://github.com/opensource-apple/objc4/blob/master/runtime/message.h#L232
-    extern void method_invoke(id receiver, Method method, ...);
-    version(ARM) extern void method_invoke_stret(id receiver, Method method, ...);
-    version(X86) extern void method_invoke_stret(id receiver, Method method, ...);
-    version(X86_64) extern void method_invoke_stret(id receiver, Method method, ...);
-    extern SEL method_getName(Method m);
-    extern IMP method_getImplementation(Method m);
-    extern const(char)* method_getTypeEncoding(Method m);
-    extern char* method_copyReturnType(Method m);
-    extern char* method_copyArgumentType(Method m, uint index);
-    extern void method_getReturnType(Method m, char* dst, size_t dst_len);
-    extern uint method_getNumberOfArguments(Method m);
-    extern objc_method_description_t* method_getDescription(Method m);
-    extern IMP method_setImplementation(Method m, IMP imp);
-    extern void method_exchangeImplementations(Method m1, Method m2);
+        // Working with Libraries
+        extern const(char)** objc_copyImageNames(uint* outCount);
+        extern const(char)* class_getImageName(Class cls);
+        extern const(char)** objc_copyClassNamesForImage(const(char)* image, uint* outCount);
 
-    // Working with Libraries
-    extern const(char)** objc_copyImageNames(uint* outCount);
-    extern const(char)* class_getImageName(Class cls);
-    extern const(char)** objc_copyClassNamesForImage(const(char)* image, uint* outCount);
+        // Working with Selectors
+        extern const(char)* sel_getName(SEL sel);
+        extern SEL sel_registerName(const(char)* str);
+        extern SEL sel_getUid(const(char)* str);
+        extern bool sel_isEqual(SEL lhs, SEL rhs);
 
-    // Working with Selectors
-    extern const(char)* sel_getName(SEL sel);
-    extern SEL sel_registerName(const(char)* str);
-    extern SEL sel_getUid(const(char)* str);
-    extern bool sel_isEqual(SEL lhs, SEL rhs);
+        // Working with Protocols
+        extern Protocol objc_getProtocol(const(char)* name);
+        extern Protocol* objc_copyProtocolList(uint* outCount);
+        extern Protocol objc_allocateProtocol(const(char)* name);
+        extern void objc_registerProtocol(Protocol proto);
+        extern void protocol_addMethodDescription(Protocol proto, SEL name, const(char)* types, bool isRequiredMethod, bool isInstanceMethod);
+        extern void protocol_addProtocol(Protocol proto, Protocol addition);
+        extern void protocol_addProperty(Protocol proto, const(char)* name, const(objc_property_attribute_t)* attributes, uint attributeCount, bool isRequiredProperty, bool isInstanceProperty);
+        extern const(char)* protocol_getName(Protocol proto);
+        extern bool protocol_isEqual(Protocol proto, Protocol other);
+        extern objc_method_description_t* protocol_copyMethodDescriptionList(Protocol proto, bool isRequiredMethod, bool isInstanceMethod, uint* outCount);
+        extern objc_method_description_t protocol_getMethodDescription(Protocol proto, SEL aSel, bool isRequiredMethod, bool isInstanceMethod);
+        extern objc_property_t* protocol_copyPropertyList(Protocol proto, uint* outCount);
+        extern objc_property_t protocol_getProperty(Protocol proto, const(char)* name, bool isRequiredProperty, bool isInstanceProperty);
+        extern Protocol* protocol_copyProtocolList(Protocol proto, uint* outCount);
+        extern bool protocol_conformsToProtocol(Protocol proto, Protocol other);
 
-    // Working with Protocols
-    extern Protocol objc_getProtocol(const(char)* name);
-    extern Protocol* objc_copyProtocolList(uint* outCount);
-    extern Protocol objc_allocateProtocol(const(char)* name);
-    extern void objc_registerProtocol(Protocol proto);
-    extern void protocol_addMethodDescription(Protocol proto, SEL name, const(char)* types, bool isRequiredMethod, bool isInstanceMethod);
-    extern void protocol_addProtocol(Protocol proto, Protocol addition);
-    extern void protocol_addProperty(Protocol proto, const(char)* name, const(objc_property_attribute_t)*attributes, uint attributeCount, bool isRequiredProperty, bool isInstanceProperty);
-    extern const(char)* protocol_getName(Protocol proto);
-    extern bool protocol_isEqual(Protocol proto, Protocol other);
-    extern objc_method_description_t* protocol_copyMethodDescriptionList(Protocol proto, bool isRequiredMethod, bool isInstanceMethod, uint* outCount);
-    extern objc_method_description_t protocol_getMethodDescription(Protocol proto, SEL aSel, bool isRequiredMethod, bool isInstanceMethod);
-    extern objc_property_t* protocol_copyPropertyList(Protocol proto, uint* outCount);
-    extern objc_property_t protocol_getProperty(Protocol proto, const(char)* name, bool isRequiredProperty, bool isInstanceProperty);
-    extern Protocol* protocol_copyProtocolList(Protocol proto, uint *outCount);
-    extern bool protocol_conformsToProtocol(Protocol proto, Protocol other);
+        // Working with Properties
+        const(char)* property_getName(objc_property_t property);
+        const(char)* property_getAttributes(objc_property_t property);
+        char* property_copyAttributeValue(objc_property_t property, const(char)* attributeName);
+        objc_property_attribute_t* property_copyAttributeList(objc_property_t property, uint* outCount);
 
-    // Working with Properties
-    const(char)* property_getName(objc_property_t property);
-    const(char)* property_getAttributes(objc_property_t property);
-    char* property_copyAttributeValue(objc_property_t property, const(char)* attributeName);
-    objc_property_attribute_t* property_copyAttributeList(objc_property_t property, uint* outCount);
+        // Using Objective-C Language Features
+        IMP imp_implementationWithBlock(void* block);
+        bool imp_removeBlock(IMP anImp);
+        id objc_loadWeak(id* location);
+        id objc_storeWeak(id* location, id obj);
 
-    // Using Objective-C Language Features
-    IMP imp_implementationWithBlock(void* block);
-    bool imp_removeBlock(IMP anImp);
-    id objc_loadWeak(id* location);
-    id objc_storeWeak(id* location, id obj);
+        // HELPERS FOR MESSAGE SEND AND INVOKE.
+        // SEE: https://github.com/opensource-apple/objc4/blob/master/runtime/message.h#L143
+        T _d_objc_msgSend(T, Args...)(any instance, SEL selector, Args args) {
+            import std.traits : isFloatingPoint;
 
-    // HELPERS FOR MESSAGE SEND AND INVOKE.
-    // SEE: https://github.com/opensource-apple/objc4/blob/master/runtime/message.h#L143
-    T _d_objc_msgSend(T, Args...)(any instance, SEL selector, Args args) {
-        import std.traits : isFloatingPoint;
+            alias fn = T function(any, SEL, toObjCArgTypes!(Args)) @nogc nothrow;
+            alias stret_fn = void function(T*, any, SEL, toObjCArgTypes!(Args)) @nogc nothrow;
 
-        alias fn = T function(any, SEL, toObjCArgTypes!(Args)) @nogc nothrow;
-        alias stret_fn = void function(T*, any, SEL, toObjCArgTypes!(Args)) @nogc nothrow;
+            version (ARM) {
 
-        version(ARM) {
+                // 32-bit ARM
+                static if (is(T == struct)) {
+                    T tmp;
+                    (cast(stret_fn)&objc_msgSend_stret)(&tmp, instance, selector, args);
+                    return tmp;
+                } else {
+                    return (cast(fn)&objc_msgSend)(instance, selector, args);
+                }
+            } else version (X86) {
 
-            // 32-bit ARM
-            static if (is(T == struct)) {
-                T tmp;
-                (cast(stret_fn)&objc_msgSend_stret)(&tmp, instance, selector, args);
-                return tmp;
+                // 32-bit X86
+                static if (is(T == struct)) {
+                    T tmp;
+                    (cast(stret_fn)&objc_msgSend_stret)(&tmp, instance, selector, args);
+                    return tmp;
+                } else static if (isFloatingPoint!T) {
+                    return (cast(fn)&objc_msgSend_fpret)(instance, selector, args);
+                } else {
+                    return (cast(fn)&objc_msgSend)(instance, selector, args);
+                }
+            } else version (X86_64) {
+
+                // 64-bit X86
+                static if (is(T == struct)) {
+                    T tmp;
+                    (cast(stret_fn)&objc_msgSend_stret)(&tmp, instance, selector, args);
+                    return tmp;
+                } else static if (is(T == float) || is(T == double) || is(T == real)) {
+                    return (cast(fn)&objc_msgSend_fpret)(instance, selector, args);
+                } else static if (is(T == __c_complex_double)) {
+                    return (cast(fn)&objc_msgSend_fp2ret)(instance, selector, args);
+                } else {
+                    return (cast(fn)&objc_msgSend)(instance, selector, args);
+                }
             } else {
+
+                // AArch64 uses msgSend in all cases.
                 return (cast(fn)&objc_msgSend)(instance, selector, args);
             }
-        } else version(X86) {
-
-            // 32-bit X86
-            static if (is(T == struct)) {
-                T tmp;
-                (cast(stret_fn)&objc_msgSend_stret)(&tmp, instance, selector, args);
-                return tmp;
-            } else static if (isFloatingPoint!T) {
-                return (cast(fn)&objc_msgSend_fpret)(instance, selector, args);
-            } else {
-                return (cast(fn)&objc_msgSend)(instance, selector, args);
-            }
-        }  else version(X86_64) {
-
-            // 64-bit X86
-            static if (is(T == struct)) {
-                T tmp;
-                (cast(stret_fn)&objc_msgSend_stret)(&tmp, instance, selector, args);
-                return tmp;
-            } else static if (is(T == float) || is(T == double) || is(T == real)) {
-                return (cast(fn)&objc_msgSend_fpret)(instance, selector, args);
-            }  else static if (is(T == __c_complex_double)) {
-                return (cast(fn)&objc_msgSend_fp2ret)(instance, selector, args);
-            } else {
-                return (cast(fn)&objc_msgSend)(instance, selector, args);
-            }
-        } else {
-
-            // AArch64 uses msgSend in all cases.
-            return (cast(fn)&objc_msgSend)(instance, selector, args);
         }
-    }
-    
-    // SEE: https://github.com/opensource-apple/objc4/blob/master/runtime/message.h#L143
-    T _d_objc_msgSendSuper(T, Args...)(objc_super* instance, SEL selector, Args args) {
-        import std.traits : isFloatingPoint;
 
-        alias fn = T function(objc_super*, SEL, toObjCArgTypes!(Args)) @nogc nothrow;
-        alias stret_fn = void function(T*, objc_super*, SEL, toObjCArgTypes!(Args)) @nogc nothrow;
+        // SEE: https://github.com/opensource-apple/objc4/blob/master/runtime/message.h#L143
+        T _d_objc_msgSendSuper(T, Args...)(objc_super* instance, SEL selector, Args args) {
+            import std.traits : isFloatingPoint;
 
-        version(ARM) {
+            alias fn = T function(objc_super*, SEL, toObjCArgTypes!(Args)) @nogc nothrow;
+            alias stret_fn = void function(T*, objc_super*, SEL, toObjCArgTypes!(Args)) @nogc nothrow;
 
-            // 32-bit ARM
-            static if (is(T == struct)) {
-                T tmp;
-                (cast(stret_fn)&objc_msgSendSuper_stret)(&tmp, instance, selector, args);
-                return tmp;
+            version (ARM) {
+
+                // 32-bit ARM
+                static if (is(T == struct)) {
+                    T tmp;
+                    (cast(stret_fn)&objc_msgSendSuper_stret)(&tmp, instance, selector, args);
+                    return tmp;
+                } else {
+                    return (cast(fn)&objc_msgSendSuper)(instance, selector, args);
+                }
+            } else version (X86) {
+
+                // 32-bit X86
+                static if (is(T == struct)) {
+                    T tmp;
+                    (cast(stret_fn)&objc_msgSendSuper_stret)(&tmp, instance, selector, args);
+                    return tmp;
+                } else {
+                    return (cast(fn)&objc_msgSendSuper)(instance, selector, args);
+                }
+            } else version (X86_64) {
+
+                // 64-bit X86
+                static if (is(T == struct)) {
+                    T tmp;
+                    (cast(stret_fn)&objc_msgSendSuper_stret)(&tmp, instance, selector, args);
+                    return tmp;
+                } else {
+                    return (cast(fn)&objc_msgSendSuper)(instance, selector, args);
+                }
             } else {
+
+                // AArch64 uses msgSend in all cases.
                 return (cast(fn)&objc_msgSendSuper)(instance, selector, args);
             }
-        } else version(X86) {
+        }
 
-            // 32-bit X86
-            static if (is(T == struct)) {
-                T tmp;
-                (cast(stret_fn)&objc_msgSendSuper_stret)(&tmp, instance, selector, args);
-                return tmp;
+        T _d_method_invoke(T, Args...)(id instance, Method method, Args args) {
+            alias fn = T function(id, Method, toObjCArgTypes!(Args)) @nogc nothrow;
+            alias stret_fn = void function(T*, id, Method, toObjCArgTypes!(Args)) @nogc nothrow;
+
+            version (ARM) {
+
+                // 32-bit ARM
+                static if (is(T == struct)) {
+                    T tmp;
+                    (cast(stret_fn)&method_invoke_stret)(&tmp, instance, method, args);
+                    return tmp;
+                } else {
+                    return (cast(fn)&method_invoke)(instance, method, args);
+                }
+            } else version (X86) {
+
+                // 32-bit X86
+                static if (is(T == struct)) {
+                    T tmp;
+                    (cast(stret_fn)&method_invoke_stret)(&tmp, instance, method, args);
+                    return tmp;
+                } else {
+                    return (cast(fn)&method_invoke)(instance, method, args);
+                }
+            } else version (X86_64) {
+
+                // 64-bit X86
+                static if (is(T == struct)) {
+                    T tmp;
+                    (cast(stret_fn)&method_invoke_stret)(&tmp, instance, method, args);
+                    return tmp;
+                } else {
+                    return (cast(fn)&method_invoke)(instance, method, args);
+                }
             } else {
-                return (cast(fn)&objc_msgSendSuper)(instance, selector, args);
-            }
-        }  else version(X86_64) {
 
-            // 64-bit X86
-            static if (is(T == struct)) {
-                T tmp;
-                (cast(stret_fn)&objc_msgSendSuper_stret)(&tmp, instance, selector, args);
-                return tmp;
-            } else {
-                return (cast(fn)&objc_msgSendSuper)(instance, selector, args);
+                // AArch64 uses msgSend in all cases.
+                return (cast(fn)&objc_msgSend)(instance, method, args);
             }
-        } else {
-
-            // AArch64 uses msgSend in all cases.
-            return (cast(fn)&objc_msgSendSuper)(instance, selector, args);
         }
     }
-
-    T _d_method_invoke(T, Args...)(id instance, Method method, Args args) {
-        alias fn = T function(id, Method, toObjCArgTypes!(Args)) @nogc nothrow;
-        alias stret_fn = void function(T*, id, Method, toObjCArgTypes!(Args)) @nogc nothrow;
-
-        version(ARM) {
-
-            // 32-bit ARM
-            static if (is(T == struct)) {
-                T tmp;
-                (cast(stret_fn)&method_invoke_stret)(&tmp, instance, method, args);
-                return tmp;
-            } else {
-                return (cast(fn)&method_invoke)(instance, method, args);
-            }
-        } else version(X86) {
-
-            // 32-bit X86
-            static if (is(T == struct)) {
-                T tmp;
-                (cast(stret_fn)&method_invoke_stret)(&tmp, instance, method, args);
-                return tmp;
-            } else {
-                return (cast(fn)&method_invoke)(instance, method, args);
-            }
-        }  else version(X86_64) {
-
-            // 64-bit X86
-            static if (is(T == struct)) {
-                T tmp;
-                (cast(stret_fn)&method_invoke_stret)(&tmp, instance, method, args);
-                return tmp;
-            } else {
-                return (cast(fn)&method_invoke)(instance, method, args);
-            }
-        } else {
-
-            // AArch64 uses msgSend in all cases.
-            return (cast(fn)&objc_msgSend)(instance, method, args);
-        }
-    }
-}
