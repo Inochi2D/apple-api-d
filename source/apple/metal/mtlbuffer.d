@@ -40,9 +40,19 @@ public:
     @property ulong gpuAddress() const;
 
     /**
-        The logical size of the buffer, in bytes.
+        The buffer on another GPU that the buffer was created from, if any.
     */
     @property MTLBuffer remoteStorageBuffer() const;
+
+    /**
+        Creates a texture that shares its storage with the buffer.
+    */
+    MTLTexture newTexture(MTLTextureDescriptor descriptor, NSUInteger offset, NSUInteger bytesPerRow) @selector("newTextureWithDescriptor:offset:bytesPerRow:");
+
+    /**
+        Creates a remote view of the buffer for another GPU in the same peer group.
+    */
+    MTLBuffer newRemoteBufferView(MTLDevice device) @selector("newRemoteBufferViewForDevice:");
     
     /**
         Base constructor
@@ -55,10 +65,15 @@ public:
     void didModifyRange(NSRange range) @selector("didModifyRange:");
 
     /**
-        Creates a texture that shares its storage with the buffer.
+        Adds a debug marker string to a specific buffer range.
     */
-    MTLTexture newTexture(MTLTextureDescriptor descriptor, NSUInteger offset, NSUInteger bytesPerRow) @selector("newTextureWithDescriptor:offset:bytesPerRow:");
+    void addDebugMarker(NSString marker, NSRange range) @selector("addDebugMarker:range:");
 
-    // Link
-    mixin ObjcLink!("MTLBuffer");
+    /**
+        Removes all debug marker strings from the buffer.
+    */
+    void removeAllDebugMarkers() @selector("removeAllDebugMarkers");
+
+    // Link MTLBuffer.
+    mixin ObjcLink;
 }
