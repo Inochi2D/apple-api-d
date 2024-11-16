@@ -22,6 +22,7 @@ mixin RequireAPIs!(Foundation, ObjC, CoreFoundation);
 mixin LinkFramework!("Foundation");
 
 public import apple.foundation.nsbridge;
+public import apple.foundation.nsautoreleasepool;
 
 public import apple.foundation.collections;
 public import apple.foundation.text;

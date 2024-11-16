@@ -224,7 +224,7 @@ public:
 /**
     Returns an autorelease version of `self_`.
 */
-DRTAutoRelease!T autorelease(T)(T self_) if (is(T : DRTBindable)) {
+DRTAutoRelease!T scoped(T)(T self_) if (is(T : DRTBindable)) {
     return DRTAutoRelease!T(self_);
 }
 
@@ -300,7 +300,7 @@ void drt_wrap_remove(id from) {
 
         // Release *after* so that we don't
         // end up destroying the other object.
-        obj_.send!void("release");
+        obj_.release();
     }
 }
 
@@ -368,7 +368,7 @@ id _drt_bind_wrap_obj(id ref_, DRTBindable bindable) {
     Gets whether the wrapper is ready
 */
 bool _drt_wrap_ready() {
-    return _DRT !is null;
+    return _DRT.ptr !is null;
 }
 
 /**
@@ -401,7 +401,7 @@ void _drt_wrap_init() {
     Allocates DRT wrapper class
 */
 id _drt_new() {
-    return _DRT.send!id("alloc").send!id("init");
+    return _DRT.alloc().initialize();
 }
 
 /**
@@ -441,8 +441,6 @@ extern(C) void __drt_unwrap(id self, SEL _cmd) {
 // Implementation of dealloc
 extern(C) void __drt_dealloc(id self, SEL _cmd) {
     if (auto _this = _drt_get_bindable(self)) {
-        // Unwrap first
-        __drt_unwrap(self, _DRT_unwrap);
         _this.notifyDealloc(self);
         nogc_delete(_this);
     }

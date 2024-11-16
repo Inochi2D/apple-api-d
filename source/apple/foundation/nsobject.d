@@ -136,12 +136,5 @@ public:
     Calls the `alloc` function for the object.
 */
 id alloc(NSObject obj_) nothrow @nogc {
-    return NSObject.message!id(obj_.objc_type(), "alloc");
-}
-
-/**
-    Calls the `init` function for the object instance.
-*/
-id initialize(id self_) nothrow @nogc {
-    return NSObject.message!id(self_, "init");
+    return Class(obj_.objc_type()).alloc();
 }

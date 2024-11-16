@@ -23,6 +23,6 @@ public import apple.objc.block;
 public import apple.objc.rt.bind : ObjcLink;
 public import apple.objc.rt.meta;
 public import apple.objc.rt.base;
-public import apple.objc.rt.drt : DRTBindable, DRTAutoRelease, idref, __from_foreign, autorelease;
+public import apple.objc.rt.drt : DRTBindable, DRTAutoRelease, idref, __from_foreign, scoped;
 
 alias selector = apple.objc.rt.selector;

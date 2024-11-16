@@ -354,6 +354,13 @@ public:
     }
 
     /**
+        Calls the `alloc` function for the object.
+    */
+    id alloc() {
+        return this.send!id("alloc");
+    }
+
+    /**
         Used by Foundation's Key-Value Observing.
     */
     Class duplicate(const(char)* name, size_t extraBytes) {
@@ -716,7 +723,7 @@ public:
     /**
         Changes the value of an instance variable of a class instance.
     */
-    void setVariable(T)(const(char)* name, T* value) {
+    void setVariable(T)(const(char)* name, T value) {
         object_setInstanceVariable(this, name, cast(void*)value); // @suppress(dscanner.unused_result)
     }
 
@@ -725,6 +732,13 @@ public:
     */
     id storeWeak(id* location) {
         return objc_storeWeak(location, this);
+    }
+
+    /**
+        Calls the `init` function for the object.
+    */
+    id initialize() {
+        return this.send!id("init");
     }
 
     /**

@@ -173,8 +173,7 @@ public:
     @property void framebufferOnly(bool);
 
     /**
-        A Boolean value that determines whether the layer’s 
-        textures are used only for rendering.
+        The size, in pixels, of textures for rendering layer content.
     */
     @property CGSize drawableSize();
     @property void drawableSize(CGSize);
