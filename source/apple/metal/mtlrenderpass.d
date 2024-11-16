@@ -268,6 +268,54 @@ public:
 }
 
 /**
+    An array of render pass color attachment descriptor objects.
+*/
+@ObjectiveC
+class MTLRenderPassColorAttachmentDescriptorArray : NSObject {
+@nogc nothrow:
+public:
+
+    /**
+        Base constructor
+    */
+    this(id self) { super(self); }
+
+    /**
+        Gets the MTLRenderPassColorAttachmentDescriptor at the specified index.
+    */
+    MTLRenderPassColorAttachmentDescriptor get(NSUInteger attachmentIndex) @selector("objectAtIndexedSubscript:");
+
+    /*
+        Sets the MTLRenderPassColorAttachmentDescriptor at the specified index.
+
+        ### Note
+        > This always uses 'copy' semantics.
+        > It is safe to set the attachment state at any legal index to nil, 
+        > which resets that attachment descriptor state to default values.
+    */
+    void set(MTLRenderPassColorAttachmentDescriptor attachment, NSUInteger attachmentIndex) @selector("setObject:atIndexedSubscript:");
+
+    /**
+        Gets the MTLRenderPassColorAttachmentDescriptor at the specified index.
+    */
+    @objc_ignore
+    MTLRenderPassColorAttachmentDescriptor opIndex(size_t index) {
+        return this.get(cast(NSUInteger)index);
+    }
+
+    /**
+        Sets the MTLRenderPassColorAttachmentDescriptor at the specified index.
+    */
+    @objc_ignore
+    void opIndexAssign(MTLRenderPassColorAttachmentDescriptor desc, size_t index) {
+        this.set(desc, cast(NSUInteger)index);
+    }
+
+    // Link
+    mixin ObjcLink!("MTLRenderPassColorAttachmentDescriptorArray");
+}
+
+/**
     Filtering options for controlling an MSAA depth resolve operation.
     
     Supported on iOS GPU Family 3 and later.
@@ -387,54 +435,6 @@ public:
 
     // Link
     mixin ObjcLink!("MTLRenderPassStencilAttachmentDescriptor");
-}
-
-/**
-    An array of render pass color attachment descriptor objects.
-*/
-@ObjectiveC
-class MTLRenderPassColorAttachmentDescriptorArray : NSObject {
-@nogc nothrow:
-public:
-
-    /**
-        Base constructor
-    */
-    this(id self) { super(self); }
-
-    /**
-        Gets the MTLRenderPassColorAttachmentDescriptor at the specified index.
-    */
-    MTLRenderPassColorAttachmentDescriptor get(NSUInteger attachmentIndex) @selector("objectAtIndexedSubscript:");
-
-    /*
-        Sets the MTLRenderPassColorAttachmentDescriptor at the specified index.
-
-        ### Note
-        > This always uses 'copy' semantics.
-        > It is safe to set the attachment state at any legal index to nil, 
-        > which resets that attachment descriptor state to default values.
-    */
-    void set(MTLRenderPassColorAttachmentDescriptor attachment, NSUInteger attachmentIndex) @selector("setObject:atIndexedSubscript:");
-
-    /**
-        Gets the MTLRenderPassColorAttachmentDescriptor at the specified index.
-    */
-    @objc_ignore
-    MTLRenderPassColorAttachmentDescriptor opIndex(size_t index) {
-        return this.get(cast(NSUInteger)index);
-    }
-
-    /**
-        Sets the MTLRenderPassColorAttachmentDescriptor at the specified index.
-    */
-    @objc_ignore
-    void opIndexAssign(MTLRenderPassColorAttachmentDescriptor desc, size_t index) {
-        this.set(desc, cast(NSUInteger)index);
-    }
-
-    // Link
-    mixin ObjcLink!("MTLRenderPassColorAttachmentDescriptorArray");
 }
 
 

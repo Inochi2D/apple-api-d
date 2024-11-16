@@ -25,25 +25,37 @@ mixin RequireAPIs!(Metal, Foundation, CoreFoundation, CoreData, CoreGraphics, Ob
 /// Link to Metal (on apple platforms)
 mixin LinkFramework!("Metal");
 
+// Base types
 public import apple.metal.mtltypes;
 public import apple.metal.mtldevice;
-
 public import apple.metal.mtlcommandqueue;
 public import apple.metal.mtlcommandbuffer;
 public import apple.metal.mtlcommandencoder;
-public import apple.metal.mtlrendercommandencoder;
-public import apple.metal.mtlcomputecommandencoder;
-public import apple.metal.mtlparallelrendercommandencoder;
-public import apple.metal.mtlblitcommandencoder;
 
-public import apple.metal.mtltexture;
-public import apple.metal.mtlbuffer;
-public import apple.metal.mtlresource;
-public import apple.metal.mtlfence;
-public import apple.metal.mtlrenderpass;
+// Rendering
+public import apple.metal.mtlparallelrendercommandencoder;
+public import apple.metal.mtlrendercommandencoder;
 public import apple.metal.mtlrenderpipeline;
-public import apple.metal.mtllibrary;
-public import apple.metal.mtlargument;
-public import apple.metal.mtldrawable;
+public import apple.metal.mtlrenderpass;
 public import apple.metal.mtldepthstencil;
 public import apple.metal.mtlsamplerstate;
+public import apple.metal.mtldrawable;
+
+// Blitting
+public import apple.metal.mtlblitcommandencoder;
+public import apple.metal.mtlblitpass;
+
+// Compute
+public import apple.metal.mtlcomputecommandencoder;
+
+// Resources
+public import apple.metal.mtlresource;
+public import apple.metal.mtltexture;
+public import apple.metal.mtlbuffer;
+
+// Shaders
+public import apple.metal.mtllibrary;
+public import apple.metal.mtlargument;
+
+// Synchronisation
+public import apple.metal.mtlfence;
